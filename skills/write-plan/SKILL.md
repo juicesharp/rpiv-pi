@@ -1,6 +1,6 @@
 ---
 name: write-plan
-description: Create phased implementation plans from design artifacts. Decomposes designs into parallelized atomic phases with success criteria in thoughts/shared/plans/. Use after design-feature.
+description: Create phased implementation plans from design artifacts. Decomposes designs into parallelized atomic phases with success criteria in thoughts/shared/plans/. Use after design.
 argument-hint: [design artifact path]
 ---
 
@@ -23,7 +23,7 @@ When this command is invoked:
    - Extract: Architecture (the code changes), File Map, Ordering Constraints, Verification Notes, Performance Considerations, Scope
    - These are the inputs for phasing
    - Design decisions are settled — do not re-evaluate them
-   - If the design has unresolved questions, STOP — tell the developer to return to design-feature
+   - If the design has unresolved questions, STOP — tell the developer to return to design
 
    **No arguments provided**:
    ```
@@ -31,8 +31,7 @@ When this command is invoked:
 
    `/skill:write-plan thoughts/shared/designs/2025-01-20_09-30-00_feature.md`
 
-   For complex features, run `/skill:design-feature` first to produce the design artifact.
-   For simple changes, `/skill:create-plan` can work directly from a task description.
+   Run `/skill:design` first to produce the design artifact. There is no standalone path.
    ```
    Then wait for input.
 
@@ -233,7 +232,7 @@ last_updated_by: Claude Code
 
 6. **No Open Questions in Final Plan**:
    - If you encounter open questions during planning, STOP
-   - If the design artifact has unresolved questions, send the developer back to design-feature
+   - If the design artifact has unresolved questions, send the developer back to design
    - Do NOT write the plan with unresolved questions
    - The implementation plan must be complete and actionable
 
@@ -281,6 +280,6 @@ last_updated_by: Claude Code
 - NEVER edit source files — this skill produces a plan document, not implementation
 - Always read the design artifact FULLY before decomposing into phases
 - The plan template must be compatible with implement-plan — preserve the phase/success criteria structure
-- If the design artifact has unresolved questions, STOP — send the developer back to design-feature
+- If the design artifact has unresolved questions, STOP — send the developer back to design
 - Code in the plan comes from the design artifact's Architecture section — do not invent new code
 - **Frontmatter consistency**: Use snake_case for multi-word field names in plan frontmatter

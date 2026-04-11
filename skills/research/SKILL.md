@@ -27,7 +27,7 @@ You are tasked with answering structured research questions by spawning targeted
    `/skill:research thoughts/shared/questions/YYYY-MM-DD_HH-MM-SS_topic.md`
 
    This skill requires a questions artifact from research-questions.
-   For standalone research, use research-codebase instead.
+   There is no standalone path — run /skill:research-questions first to produce a questions artifact.
    ```
    Then wait for input.
 
@@ -258,9 +258,7 @@ Research document written to:
 Please review and let me know if you have follow-up questions.
 
 When ready:
-- For complex features: `/skill:design-feature thoughts/shared/research/[filename].md`
-- For complex multi-layer features (6+ files): `/skill:design-feature-iterative thoughts/shared/research/[filename].md`
-- For straightforward changes: `/skill:create-plan thoughts/shared/research/[filename].md`
+`/skill:design thoughts/shared/research/[filename].md`
 ```
 
 ## Step 6: Handle Follow-ups
@@ -274,9 +272,9 @@ When ready:
 ## Important Notes
 
 - **Analysis only**: This skill answers questions. It does NOT discover what to ask — that's research-questions' job.
-- **Always chained**: This skill requires a questions artifact. For standalone research, use research-codebase.
+- **Always chained**: This skill requires a questions artifact from research-questions. There is no standalone path.
 - **Grouped dispatch**: Related questions are batched per agent based on file overlap. Default agent: codebase-analyzer. This reduces token waste from redundant file reads and lets agents build cross-question context.
-- **Same output format**: Research documents match research-codebase output — downstream consumers (design-feature, create-plan) work unchanged.
+- **Downstream compatible**: Research documents feed directly into design and write-plan — the same Code References / Integration Points / Architecture Insights sections they expect.
 - **File reading**: Always read the questions artifact FULLY (no limit/offset) before dispatching agents
 - **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read the questions artifact first (Step 1)

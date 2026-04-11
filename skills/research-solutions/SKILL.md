@@ -6,7 +6,7 @@ argument-hint: [feature/change description]
 
 # Research Solutions
 
-You are tasked with analyzing solution options for new features or changes by invoking parallel skills and synthesizing their findings into actionable recommendations optimized for create-plan consumption.
+You are tasked with analyzing solution options for new features or changes by invoking parallel skills and synthesizing their findings into actionable recommendations optimized for design consumption.
 
 ## Initial Setup:
 
@@ -231,7 +231,7 @@ Then wait for the user's request.
 7. **Present findings:**
    - Present concise summary with clear recommendation
    - Highlight key integration points
-   - Ask if they want to proceed to create-plan or need clarification
+   - Ask if they want to proceed to /skill:design with the chosen option or need clarification
 
 8. **Handle follow-up questions:**
    - If user has questions, append to same document
@@ -248,10 +248,10 @@ Then wait for the user's request.
 - Each agent prompt should be specific and focused on targeted research questions
 - Quantify pattern precedent - count usage in codebase, don't just say "follows pattern"
 - Ground complexity estimates in actual similar work from git history
-- Think like a planner - you're setting up create-plan for success
+- Think like a software architect - you're setting up design for success by landing on one chosen approach with evidence
 - Keep the main agent focused on synthesis and comparison, not deep implementation details
 - Encourage agents to find existing patterns and examples, not just describe possibilities
-- Resolve technical unknowns during research - don't leave critical questions for create-plan
+- Resolve technical unknowns during research - don't leave critical questions for design
 - **File reading**: Always read mentioned files FULLY (no limit/offset) before invoking skills
 - **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read mentioned files first before invoking skills (step 1)

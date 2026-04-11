@@ -1,10 +1,10 @@
 ---
-name: design-feature-iterative
-description: Design features through iterative vertical-slice decomposition and progressive code generation with developer micro-checkpoints. For complex multi-component features touching 6+ files across multiple layers. Produces design artifacts in thoughts/shared/designs/. Always requires a research artifact from research-codebase (or research-questions → research).
+name: design
+description: Design features through iterative vertical-slice decomposition and progressive code generation with developer micro-checkpoints. For complex multi-component features touching 6+ files across multiple layers. Produces design artifacts in thoughts/shared/designs/. Always requires a research artifact from research-questions → research, or a solutions artifact from research-solutions.
 argument-hint: [research artifact path]
 ---
 
-# Design Feature (Iterative)
+# Design
 
 ## Task
 
@@ -45,7 +45,7 @@ When this command is invoked:
    ```
    I'll design a feature iteratively from a research artifact. Please provide:
 
-   `/skill:design-feature-iterative [research artifact] [research-questions] [task description]`
+   `/skill:design [research artifact] [research-questions] [task description]`
 
    Research artifact is required. Research-questions and task description are optional, in any order.
    ```
@@ -55,7 +55,7 @@ When this command is invoked:
 
 ## Step 2: Targeted Research
 
-This is NOT research-codebase. Focus on DEPTH (how things work, what patterns to follow) not BREADTH (where things are).
+This is NOT a discovery sweep. Focus on DEPTH (how things work, what patterns to follow) not BREADTH (where things are).
 
 1. **Spawn parallel research agents** using the Agent tool:
 
@@ -73,7 +73,7 @@ This is NOT research-codebase. Focus on DEPTH (how things work, what patterns to
    - "How does [integration point] work in detail — show me the wiring"
    - "What connects to [component] — inbound refs, outbound deps, config"
 
-   NOT: "Find all files related to X" — that's research-codebase's job.
+   NOT: "Find all files related to X" — that's discovery's job, upstream of this skill.
 
 2. **Read all key files identified by agents** into the main context — especially the pattern templates you'll model after.
 
@@ -380,7 +380,7 @@ The artifact was created as a skeleton in Step 6 and filled progressively in Ste
 
 4. **Be Skeptical**: Question vague requirements. If an existing pattern doesn't fit the new feature, say so and propose alternatives. Don't force a pattern where it doesn't belong.
 
-5. **Resolve Everything**: No unresolved questions in the final artifact. If something is ambiguous, ask during the checkpoint or micro-checkpoint. The design must be complete enough that create-plan can mechanically decompose it into phases.
+5. **Resolve Everything**: No unresolved questions in the final artifact. If something is ambiguous, ask during the checkpoint or micro-checkpoint. The design must be complete enough that write-plan can mechanically decompose it into phases.
 
 6. **Present Condensed, Persist Complete**: Micro-checkpoints show the developer summaries, signatures, and key code blocks. The artifact always contains full copy-pasteable code. If the developer asks to see full code, show it — but never default to walls of code in checkpoints.
 
@@ -396,7 +396,7 @@ Spawn multiple agents in parallel when they're searching for different things. E
 
 ## Important Notes
 
-- **Always chained**: This skill requires a research artifact. For design without prior research, use design-feature.
+- **Always chained**: This skill requires a research artifact produced by the research skill. There is no standalone design mode.
 - **File reading**: Always read research artifacts and referenced files FULLY (no limit/offset) before spawning agents
 - **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read input files first (Step 1) before spawning agents (Step 2)

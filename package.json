@@ -1,6 +1,6 @@
 {
   "name": "rpiv-pi",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Skill-based development workflow for Pi — research, design, plan, implement, review",
   "keywords": ["pi-package", "pi-extension"],
   "type": "module",

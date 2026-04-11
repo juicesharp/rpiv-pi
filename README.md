@@ -2,7 +2,7 @@
 
 Skill-based development workflow for Pi — research, design, plan, implement, review.
 
-Version: 0.2.0
+Version: 0.3.0
 
 ## Requirements
 
@@ -48,7 +48,7 @@ On first session start in any project, rpiv-pi auto-copies 9 agent files to `<cw
 | `rpiv-core` | `ask_user_question`, `todo` | `/todos`, `/rpiv-update-agents`, `/rpiv-setup` | `session_start`, `session_tree`, `session_compact`, `session_shutdown`, `tool_call`, `before_agent_start` |
 | `web-tools` | `web_search`, `web_fetch` | `/web-search-config` | — |
 
-### Skills (21)
+### Skills (17)
 
 Invoke via `/skill:<name>` from inside a Pi session.
 
@@ -59,16 +59,12 @@ Invoke via `/skill:<name>` from inside a Pi session.
 | `code-review` | Conduct comprehensive code reviews by analyzing changes in parallel. |
 | `commit` | Create structured git commits grouped by logical change. |
 | `create-handoff` | Create context-preserving handoff documents for session transitions. |
-| `create-plan` | Create detailed implementation plans through interactive collaboration. |
-| `design-feature` | Design how code will be shaped through interactive architectural collaboration. |
-| `design-feature-iterative` | Design features through iterative vertical-slice decomposition with developer micro-checkpoints. |
-| `evaluate-research` | A/B test two research documents by verifying claims against the actual codebase. |
+| `design` | Design features through iterative vertical-slice decomposition with developer micro-checkpoints. Accepts research or solutions artifacts. |
 | `implement-plan` | Execute approved implementation plans phase by phase. |
 | `iterate-plan` | Update existing implementation plans based on feedback. |
 | `migrate-to-guidance` | Migrate existing CLAUDE.md files to the `.rpiv/guidance/` system. |
 | `outline-test-cases` | Discover testable features and create a folder outline under `.rpiv/test-cases/` with per-feature metadata. |
 | `research` | Answer structured research questions via targeted parallel analysis agents. |
-| `research-codebase` | Conduct comprehensive codebase research by spawning parallel skills with integration scanning. |
 | `research-questions` | Generate trace-quality research questions from codebase discovery. |
 | `research-solutions` | Analyze solution options for features or changes with pros/cons. |
 | `resume-handoff` | Resume work from a handoff document. |
@@ -97,7 +93,7 @@ Dispatched via the `Agent` tool (provided by `@tintinweb/pi-subagents`) with `su
 ```
 /skill:research-questions "how does X work"
 /skill:research thoughts/shared/questions/<latest>.md
-/skill:design-feature-iterative thoughts/shared/research/<latest>.md
+/skill:design thoughts/shared/research/<latest>.md
 /skill:write-plan thoughts/shared/designs/<latest>.md
 /skill:implement-plan thoughts/shared/plans/<latest>.md Phase <N>
 ```
