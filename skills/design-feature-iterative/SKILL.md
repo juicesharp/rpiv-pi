@@ -38,7 +38,7 @@ When this command is invoked:
    - Extract: Summary, Code References, Integration Points, Architecture Insights, Developer Context, Open Questions
    - **Read the key source files from Code References** into the main context — especially hooks, shared utilities, and integration points the design will depend on. Read them FULLY. This ensures you have complete understanding before proceeding.
    - These become starting context — no need to re-discover what exists
-   - Note any Open Questions from the research — these are your first ambiguities
+   - Research Developer Context Q/As = inherited decisions (record in Decisions, never re-ask); Open Questions = starting ambiguity queue, filtered by dimension in Step 3
    - If a research-questions artifact is also provided, read it for additional discovery context
 
    **No arguments provided**:
@@ -85,21 +85,20 @@ This is NOT research-codebase. Focus on DEPTH (how things work, what patterns to
    - Note assumptions that need verification
    - Determine true scope based on codebase reality
 
-## Step 3: Identify Ambiguities
+## Step 3: Identify Ambiguities — Dimension Sweep
 
-Synthesize agent findings and identify what needs human decision. Categorize each ambiguity:
+Walk Step 2 findings, inherited research Q/As, and carried Open Questions through six architectural dimensions that map 1:1 to `write-plan` extract sections — the sweep guarantees downstream completeness. Add **migration** as a seventh dimension only if the feature changes persisted schema.
 
-- **Pattern conflict**: existing code uses pattern A in one place, pattern B in another — which to follow?
-- **Missing pattern**: no existing implementation to model after — need to design from scratch
-- **Scope boundary**: what's in this feature vs deferred to future work?
-- **Integration choice**: multiple valid places to wire in — which one?
-- **Novel approach**: new library/technique — which option fits the project architecture?
+- **Data model** — types, schemas, entities
+- **API surface** — signatures, exports, routes
+- **Integration wiring** — mount points, DI, events, config
+- **Scope** — in / explicitly deferred
+- **Verification** — tests, assertions, risk-bearing behaviors
+- **Performance** — load paths, caching, N+1 risks
 
-**Simple decisions** (clear single pattern, one valid option, obvious from codebase) resolve silently — do not ask the developer about these. Record them directly in the Decisions section with evidence.
+For each dimension, classify findings as **simple decisions** (one valid option, obvious from codebase — record in Decisions with `file:line` evidence, do not ask) or **genuine ambiguities** (multiple valid options, conflicting patterns, scope questions, novel choices — queue for Step 5). Inherited research Q/As land as simple; Open Questions filter by dimension — architectural survives, implementation-detail defers.
 
-**Genuine ambiguities** (multiple valid options, conflicting patterns, scope questions, novel choices) become checkpoint questions in Step 5.
-
-**Pre-validate options before presenting them**: Check every option against research constraints and the runtime behavior of code in context. If an option models after an existing pattern, verify the pattern works under the new code's conditions (e.g., conditional mounting, async state). Eliminate options that violate constraints, or present them with an explicit caveat stating the violation. Do not offer choices that contradict evidence from Steps 1-2.
+**Pre-validate every option** before queuing it against research constraints and runtime code behavior. Eliminate or caveat options that contradict Steps 1-2 evidence. **Coverage check**: every Step 2 file read appears in at least one decision or ambiguity; every dimension is addressed (silently-resolved valid, skipped-unchecked not).
 
 ## Step 4: Holistic Self-Critique
 
