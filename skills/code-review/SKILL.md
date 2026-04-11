@@ -5,13 +5,6 @@ argument-hint: [scope]
 allowed-tools: Read, Bash(git *), Glob, Grep, Agent
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
-## Recent Changes
-- Changed files: !`git diff --stat HEAD~1 2>/dev/null || echo "No recent commits"`
-
 # Code Review System
 
 You are tasked with conducting comprehensive code reviews by invoking parallel skills to analyze changes and synthesize their findings into actionable feedback.
@@ -48,22 +41,22 @@ Then wait for the user's review request.
    - Break down the changes into reviewable areas
    - Take time to ultrathink about patterns, security implications, and architectural impacts
    - Identify which components are affected
-   - Create a review plan using TaskCreate to track all aspects
+   - Create a review plan using the `todo` tool to track all aspects
    - Consider which existing patterns and historical decisions are relevant
 
 3. **Spawn parallel agents for comprehensive review:**
    - Plan first then spawn multiple agents to review different aspects concurrently using the Agent tool. Those MUST be run simultaneously to boost efficiency.
     **For codebase research:**
-   - Use the **rpiv-next:codebase-locator** agent to find WHERE files and components live
-   - Use the **rpiv-next:codebase-analyzer** agent to understand HOW specific code works
-   - Use the **rpiv-next:codebase-pattern-finder** agent if you need examples of similar implementations
+   - Use the **codebase-locator** agent to find WHERE files and components live
+   - Use the **codebase-analyzer** agent to understand HOW specific code works
+   - Use the **codebase-pattern-finder** agent if you need examples of similar implementations
 
    **For thoughts directory:**
-   - Use the **rpiv-next:thoughts-locator** agent to discover what documents exist about the topic
-   - Use the **rpiv-next:thoughts-analyzer** agent to extract key insights from specific documents
+   - Use the **thoughts-locator** agent to discover what documents exist about the topic
+   - Use the **thoughts-analyzer** agent to extract key insights from specific documents
 
    **For web research (only if user explicitly asks):**
-   - Use the **rpiv-next:web-search-researcher** agent for external documentation and resources
+   - Use the **web-search-researcher** agent for external documentation and resources
    - IF you use web-research agents, instruct them to return LINKS with their findings, and please INCLUDE those links in your final report
 
    The key is to use these agents intelligently:
@@ -89,7 +82,7 @@ Then wait for the user's review request.
      - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
      - [scope]: Brief kebab-case description of what was reviewed
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the "Git Context" section above
+   - Determine the current git branch and short commit hash via `git` (fall back to "no-branch" / "no-commit" if not a git repo)
    - Reviewer: Use "Claude Code"
    - If metadata unavailable: use "unknown" for commit/branch
 
@@ -178,12 +171,12 @@ Then wait for the user's review request.
   - ALWAYS wait for all agents to complete before synthesizing (step 4)
   - ALWAYS gather metadata before writing the document (step 5 before step 6)
 - **Agent roles:**
-  - **rpiv-next:codebase-locator**: WHERE code lives (find files)
-  - **rpiv-next:codebase-analyzer**: HOW code works (implementation details)
-  - **rpiv-next:codebase-pattern-finder**: Examples of similar code
-  - **rpiv-next:thoughts-locator**: Find historical documentation
-  - **rpiv-next:thoughts-analyzer**: Extract insights from documents
-  - **rpiv-next:web-search-researcher**: External sources (sparingly)
+  - **codebase-locator**: WHERE code lives (find files)
+  - **codebase-analyzer**: HOW code works (implementation details)
+  - **codebase-pattern-finder**: Examples of similar code
+  - **thoughts-locator**: Find historical documentation
+  - **thoughts-analyzer**: Extract insights from documents
+  - **web-search-researcher**: External sources (sparingly)
 - **Severity classification**:
   - Use evidence from agents to justify each issue's severity
   - Provide specific file:line references for all issues

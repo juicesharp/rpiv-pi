@@ -4,14 +4,12 @@ description: Design features through iterative vertical-slice decomposition and 
 argument-hint: [research artifact path]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
-## Task Input
-$ARGUMENTS
-
 # Design Feature (Iterative)
+
+## Task
+
+If the user has not already provided a research artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
+
 
 You are tasked with designing how code will be shaped for a feature or change. This iterative variant decomposes features into vertical slices and generates code slice-by-slice with developer micro-checkpoints between slices. The design artifact feeds directly into write-plan, which sequences it into phases.
 
@@ -47,7 +45,7 @@ When this command is invoked:
    ```
    I'll design a feature iteratively from a research artifact. Please provide:
 
-   `/rpiv-next:design-feature-iterative [research artifact] [research-questions] [task description]`
+   `/skill:design-feature-iterative [research artifact] [research-questions] [task description]`
 
    Research artifact is required. Research-questions and task description are optional, in any order.
    ```
@@ -61,13 +59,13 @@ This is NOT research-codebase. Focus on DEPTH (how things work, what patterns to
 
 1. **Spawn parallel research agents** using the Agent tool:
 
-   - Use **rpiv-next:codebase-pattern-finder** to find existing implementations to model after — the primary template for code shape
-   - Use **rpiv-next:codebase-analyzer** to understand HOW integration points work in detail
-   - Use **rpiv-next:integration-scanner** to map the wiring surface — inbound refs, outbound deps, config/DI/event registration
-   - Use **rpiv-next:precedent-locator** to find similar past changes in git history — what commits introduced comparable features, what broke, and what lessons apply to this design
+   - Use **codebase-pattern-finder** to find existing implementations to model after — the primary template for code shape
+   - Use **codebase-analyzer** to understand HOW integration points work in detail
+   - Use **integration-scanner** to map the wiring surface — inbound refs, outbound deps, config/DI/event registration
+   - Use **precedent-locator** to find similar past changes in git history — what commits introduced comparable features, what broke, and what lessons apply to this design
 
    **Novel work** (new libraries, first-time patterns, no existing codebase precedent):
-   - Add **rpiv-next:web-search-researcher** for external documentation, API references, and community patterns
+   - Add **web-search-researcher** for external documentation, API references, and community patterns
    - Instruct it to return LINKS with findings — include those links in the final design artifact
 
    Agent prompts should focus on:
@@ -145,23 +143,14 @@ Use the grounded-questions-one-at-a-time pattern. Use a **❓ Question:** prefix
 
 **Choosing question format:**
 
-- **AskUserQuestion** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
+- **`ask_user_question` tool** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
 
-      AskUserQuestion:
-        questions:
-          - question: "Found 2 mapping approaches — which should new code follow?"
-            header: "Pattern"
-            multiSelect: false
-            options:
-              - label: "Manual mapping (Recommended)"
-                description: "Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences"
-              - label: "AutoMapper"
-                description: "Used in UserService (src/services/UserService.ts:12) — 2 occurrences"
+  > Use the `ask_user_question` tool with the following question: "Found 2 mapping approaches — which should new code follow?". Header: "Pattern". Options: "Manual mapping (Recommended)" (Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences); "AutoMapper" (Used in UserService (src/services/UserService.ts:12) — 2 occurrences).
 
 - **Free-text with ❓ Question: prefix** — when the question is open-ended and options can't be predicted (discovery, "what am I missing?", corrections). Example:
   "❓ Question: Integration scanner found no background job registration for this area. Is that expected, or is there async processing I'm not seeing?"
 
-**Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single AskUserQuestion call. Keep dependent questions sequential.
+**Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
 **Classify each response:**
 
@@ -169,7 +158,7 @@ Use the grounded-questions-one-at-a-time pattern. Use a **❓ Question:** prefix
 - Record in Developer Context. Fix in Decisions section.
 
 **Correction** (e.g., "no, there's a third option you missed", "check the events module"):
-- Spawn targeted rescan: **rpiv-next:codebase-analyzer** on the new area (max 1-2 agents).
+- Spawn targeted rescan: **codebase-analyzer** on the new area (max 1-2 agents).
 - Merge results. Update ambiguity assessment.
 
 **Scope adjustment** (e.g., "skip the UI, backend only", "include tests"):
@@ -190,21 +179,7 @@ Scope: [what's in] | Not building: [what's out]
 Files: [N] new, [M] modified
 ```
 
-Use **AskUserQuestion** to confirm before proceeding:
-
-```
-questions:
-  - question: "[Summary from design brief above]. Ready to proceed to decomposition?"
-    header: "Design"
-    multiSelect: false
-    options:
-      - label: "Proceed (Recommended)"
-        description: "Decompose into vertical slices, then generate code slice-by-slice"
-      - label: "Adjust decisions"
-        description: "Revisit one or more architectural decisions above"
-      - label: "Change scope"
-        description: "Add or remove items from the building/not-building lists"
-```
+Use the `ask_user_question` tool to confirm before proceeding. Question: "[Summary from design brief above]. Ready to proceed to decomposition?". Header: "Design". Options: "Proceed (Recommended)" (Decompose into vertical slices, then generate code slice-by-slice); "Adjust decisions" (Revisit one or more architectural decisions above); "Change scope" (Add or remove items from the building/not-building lists).
 
 ## Step 6: Feature Decomposition
 
@@ -234,24 +209,10 @@ After the design summary is confirmed, decompose the feature into vertical slice
    - Sequential: each builds on the previous (never parallel)
    - Foundation first: types/interfaces always Slice 1
 
-3. **Confirm decomposition** with AskUserQuestion:
-
-   ```
-   questions:
-     - question: "[N] slices for [feature]. Slice 1: [name] (foundation). Slices 2-N: [brief]. Approve decomposition?"
-       header: "Slices"
-       multiSelect: false
-       options:
-         - label: "Approve (Recommended)"
-           description: "Proceed to slice-by-slice code generation"
-         - label: "Adjust slices"
-           description: "Reorder, merge, or split slices before generating"
-         - label: "Change scope"
-           description: "Add or remove files from the decomposition"
-   ```
+3. **Confirm decomposition** using the `ask_user_question` tool. Question: "[N] slices for [feature]. Slice 1: [name] (foundation). Slices 2-N: [brief]. Approve decomposition?". Header: "Slices". Options: "Approve (Recommended)" (Proceed to slice-by-slice code generation); "Adjust slices" (Reorder, merge, or split slices before generating); "Change scope" (Add or remove files from the decomposition).
 
 4. **Create skeleton artifact** — immediately after decomposition is approved:
-   - Determine metadata: filename `thoughts/shared/designs/YYYY-MM-DD_HH-MM-SS_topic.md`, repository name from git root, branch/commit from Git Context, designer "Claude Code"
+   - Determine metadata: filename `thoughts/shared/designs/YYYY-MM-DD_HH-MM-SS_topic.md`, repository name from git root, current git branch and short commit hash (fall back to "no-branch" / "no-commit" if not a git repo), designer "Claude Code"
    - Write skeleton using the Write tool with `status: in-progress` in frontmatter
    - **Include all prose sections filled** from Steps 1-5: Summary, Requirements, Current State Analysis, Scope, Decisions, Desired End State, File Map, Ordering Constraints, Verification Notes, Performance Considerations, Migration Notes, Pattern References, Developer Context, References
    - **Architecture section**: one `### path/to/file.ext — NEW/MODIFY` heading per file from the decomposition, with empty code fences as placeholders
@@ -298,7 +259,7 @@ Generate complete, copy-pasteable code for every file in this slice — but **ho
 - **Test files**: complete test suites following project patterns
 - **Wiring**: show where new code hooks into existing code
 
-If additional context is needed, spawn a targeted **rpiv-next:codebase-analyzer** agent.
+If additional context is needed, spawn a targeted **codebase-analyzer** agent.
 
 No pseudocode, no TODOs, no placeholders — the code must be copy-pasteable by implement-plan.
 
@@ -330,21 +291,7 @@ Present a **condensed review** of the slice — NOT the full generated code. The
 
 **If the developer asks to see full code**, show it inline — exception, not default.
 
-Use AskUserQuestion to confirm:
-
-```
-questions:
-  - question: "Slice [N/M]: [slice name] — [files affected]. [1-line summary]. Approve?"
-    header: "Slice [N]"
-    multiSelect: false
-    options:
-      - label: "Approve (Recommended)"
-        description: "Lock this slice, write to artifact, proceed to slice [N+1]"
-      - label: "Revise this slice"
-        description: "Adjust code before proceeding — describe what to change"
-      - label: "Rethink remaining slices"
-        description: "This slice reveals a design issue — revisit decomposition"
-```
+Use the `ask_user_question` tool to confirm. Question: "Slice [N/M]: [slice name] — [files affected]. [1-line summary]. Approve?". Header: "Slice [N]". Options: "Approve (Recommended)" (Lock this slice, write to artifact, proceed to slice [N+1]); "Revise this slice" (Adjust code before proceeding — describe what to change); "Rethink remaining slices" (This slice reveals a design issue — revisit decomposition).
 
 **Checkpoint cadence**: Slices 1-2: always individual. Slices 3+: individual if (a) mid-generation agent spawn was needed, (b) MODIFY touches an undiscussed file, or (c) self-verify fixed a violation.
 Otherwise batch 2-3 slices (max 3).
@@ -378,20 +325,7 @@ After all slices are complete, review cross-slice consistency:
 
 2. **Verify research constraints**: Check each Precedent & Lesson and Verification Note from the research artifact against the generated code. List satisfaction status.
 
-3. **Confirm with AskUserQuestion**:
-   ```
-   questions:
-     - question: "[N] slices complete, [M] files total. Cross-slice consistency verified. Proceed to design artifact?"
-       header: "Verify"
-       multiSelect: false
-       options:
-         - label: "Proceed (Recommended)"
-           description: "Finalize the design artifact (verify completeness, update status)"
-         - label: "Revisit slice"
-           description: "Reopen a specific slice for revision — Edit the artifact after"
-         - label: "Add missing"
-           description: "A file or integration point is missing — add to artifact"
-   ```
+3. **Confirm using the `ask_user_question` tool**. Question: "[N] slices complete, [M] files total. Cross-slice consistency verified. Proceed to design artifact?". Header: "Verify". Options: "Proceed (Recommended)" (Finalize the design artifact (verify completeness, update status)); "Revisit slice" (Reopen a specific slice for revision — Edit the artifact after); "Add missing" (A file or integration point is missing — add to artifact).
 
 ## Step 9: Finalize Design Artifact
 
@@ -427,7 +361,7 @@ The artifact was created as a skeleton in Step 6 and filled progressively in Ste
    - Does the code match what you envision?
    - Any missing integration points or edge cases?
 
-   When ready, run `/rpiv-next:write-plan thoughts/shared/designs/[filename].md` to sequence into phases.
+   When ready, run `/skill:write-plan thoughts/shared/designs/[filename].md` to sequence into phases.
    ```
 
 2. **Handle follow-up changes**:

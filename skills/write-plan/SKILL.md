@@ -4,12 +4,9 @@ description: Create phased implementation plans from design artifacts. Decompose
 argument-hint: [design artifact path]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 ## Task Input
-$ARGUMENTS
+
+If the user has not already provided a specific design artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Write Plan
 
@@ -32,10 +29,10 @@ When this command is invoked:
    ```
    I'll create an implementation plan from a design artifact. Please provide the path:
 
-   `/rpiv-next:write-plan thoughts/shared/designs/2025-01-20_09-30-00_feature.md`
+   `/skill:write-plan thoughts/shared/designs/2025-01-20_09-30-00_feature.md`
 
-   For complex features, run `/rpiv-next:design-feature` first to produce the design artifact.
-   For simple changes, `/rpiv-next:create-plan` can work directly from a task description.
+   For complex features, run `/skill:design-feature` first to produce the design artifact.
+   For simple changes, `/skill:create-plan` can work directly from a task description.
    ```
    Then wait for input.
 
@@ -69,21 +66,7 @@ Total: [N] files across [M] phases.
 Does this phasing make sense? Should I adjust the order or granularity?
 ```
 
-Use **AskUserQuestion** to confirm the phase structure:
-
-```
-questions:
-  - question: "[N] phases, [M] total files. Does this structure work?"
-    header: "Phases"
-    multiSelect: false
-    options:
-      - label: "Proceed (Recommended)"
-        description: "Write the detailed plan with code blocks and success criteria"
-      - label: "Adjust phases"
-        description: "Split, merge, or reorder phases before writing"
-      - label: "Change scope"
-        description: "Add or remove files from the plan"
-```
+Use the `ask_user_question` tool to confirm the phase structure. Question: "[N] phases, [M] total files. Does this structure work?". Header: "Phases". Options: "Proceed (Recommended)" (Write the detailed plan with code blocks and success criteria); "Adjust phases" (Split, merge, or reorder phases before writing); "Change scope" (Add or remove files from the plan).
 
 Get feedback on structure before writing details.
 
@@ -207,7 +190,7 @@ last_updated_by: Claude Code
    - Are the success criteria specific enough?
    - Any phase that should be split or merged?
 
-   When ready, run `/rpiv-next:implement-plan thoughts/shared/plans/[filename].md Phase 1`
+   When ready, run `/skill:implement-plan thoughts/shared/plans/[filename].md Phase 1`
    ```
 
 2. **Iterate based on feedback** — be ready to:
@@ -245,7 +228,7 @@ last_updated_by: Claude Code
    - Don't split for the sake of splitting
 
 5. **Track Progress**:
-   - Use TaskCreate/TaskUpdate to track planning tasks
+   - Use a todo list to track planning tasks
    - Mark planning tasks complete when done
 
 6. **No Open Questions in Final Plan**:

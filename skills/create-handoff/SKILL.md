@@ -6,11 +6,6 @@ allowed-tools: Read, Write, Bash(git *), Glob, Grep
 disable-model-invocation: true
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-- Recent commits: !`git log --oneline -10 2>/dev/null || echo "No git history available"`
-
 # Create Handoff
 
 You are tasked with writing a handoff document to hand off your work to another agent in a new session. You will create a handoff document that is thorough, but also **concise**. The goal is to compact and summarize your context without losing any of the key details of what you're working on.
@@ -24,7 +19,7 @@ Use the following information to understand how to create your document:
         - HH-MM-SS is the hours, minutes and seconds based on the current time, in 24-hour format (i.e. use `13-00-00` for `1:00 pm`)
         - description is a brief kebab-case description
      - Repository name: from git root basename, or current directory basename if not a git repo
-     - Use the git branch and commit from the "Git Context" section above
+     - Use the git branch and commit from the git context injected at the start of the session (or run `git branch --show-current` / `git rev-parse --short HEAD` directly)
      - Researcher: Use "Claude Code"
      - If metadata unavailable: use "unknown" for commit/branch
     - Examples:
@@ -83,7 +78,7 @@ Once this is completed, you should respond to the user with the template between
 Handoff created! You can resume from this handoff in a new session with the following command:
 
 ```bash
-/rpiv-next:resume-handoff thoughts/shared/handoffs/YYYY-MM-DD_HH-MM-SS_description.md
+/skill:resume-handoff thoughts/shared/handoffs/YYYY-MM-DD_HH-MM-SS_description.md
 ```
 
 Replace the path with your actual handoff file path.

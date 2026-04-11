@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Glob
 
 # Migrate CLAUDE.md to Guidance
 
-You are tasked with migrating a project's existing `CLAUDE.md` files (typically created by `/rpiv-next:annotate-inline`) into the `.rpiv/guidance/` system.
+You are tasked with migrating a project's existing `CLAUDE.md` files (typically created by `/skill:annotate-inline`) into the `.rpiv/guidance/` system.
 
 The migration relocates files from in-place `CLAUDE.md` to `.rpiv/guidance/{path}/architecture.md` and transforms internal cross-references.
 
@@ -21,7 +21,7 @@ The migration relocates files from in-place `CLAUDE.md` to `.rpiv/guidance/{path
 2. **Dry run — preview the migration:**
    - Run the migration script in dry-run mode:
      ```
-     node "${CLAUDE_PLUGIN_ROOT}/scripts/migrate.js" --project-dir "${CWD}" --dry-run
+     node scripts/migrate.js --project-dir "${CWD}" --dry-run
      ```
    - Parse the JSON output from stdout and present a migration plan to the user:
      ```
@@ -54,7 +54,7 @@ The migration relocates files from in-place `CLAUDE.md` to `.rpiv/guidance/{path
 3. **Execute the migration:**
    - Build the command based on user choices:
      ```
-     node "${CLAUDE_PLUGIN_ROOT}/scripts/migrate.js" --project-dir "${CWD}" [--delete-originals] [--force]
+     node scripts/migrate.js --project-dir "${CWD}" [--delete-originals] [--force]
      ```
    - Run the migration and parse the JSON output
    - Present the results:
@@ -78,7 +78,7 @@ The migration relocates files from in-place `CLAUDE.md` to `.rpiv/guidance/{path
    - Suggest next steps:
      - "Run `claude` in the project and read a source file to verify guidance injection works"
      - If originals were not deleted: "You can delete the original CLAUDE.md files once you've verified the migration"
-     - "If you were using `/rpiv-next:annotate-inline`, you can now use `/rpiv-next:annotate-guidance` for future annotations"
+     - "If you were using `/skill:annotate-inline`, you can now use `/skill:annotate-guidance` for future annotations"
 
 ## Important notes:
 - The migration script handles all file operations — do not manually copy or move CLAUDE.md files

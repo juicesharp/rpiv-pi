@@ -25,7 +25,7 @@ I'll help you resume work from a handoff document. Let me find the available han
 
 Which handoff would you like to resume from?
 
-Tip: You can invoke this command directly with a handoff path: `/rpiv-next:resume-handoff thoughts/shared/handoffs/YYYY-MM-DD_HH-MM-SS_description.md`
+Tip: You can invoke this command directly with a handoff path: `/skill:resume-handoff thoughts/shared/handoffs/YYYY-MM-DD_HH-MM-SS_description.md`
 ```
 
 Then wait for the user's input.
@@ -101,25 +101,11 @@ Then wait for the user's input.
 
    ```
 
-   Use **AskUserQuestion** to confirm the approach:
-
-   ```
-   questions:
-     - question: "[Summary of recommended next action]. Proceed?"
-       header: "Resume"
-       multiSelect: false
-       options:
-         - label: "Proceed (Recommended)"
-           description: "Begin with [recommended action 1]"
-         - label: "Adjust approach"
-           description: "Change the order or scope of next steps"
-         - label: "Re-analyze"
-           description: "The codebase has changed — re-verify state first"
-   ```
+   Use the `ask_user_question` tool to confirm the approach. Question: "[Summary of recommended next action]. Proceed?". Header: "Resume". Options: "Proceed (Recommended)" (Begin with [recommended action 1]); "Adjust approach" (Change the order or scope of next steps); "Re-analyze" (The codebase has changed — re-verify state first).
 
 ### Step 3: Create Action Plan
 
-1. **Use TaskCreate to create task list**:
+1. **Create a task list**:
    - Convert action items from handoff into todos
    - Add any new tasks discovered during analysis
    - Prioritize based on dependencies and handoff guidance
@@ -161,7 +147,7 @@ Then wait for the user's input.
    - Build on discovered solutions
 
 4. **Track Continuity**:
-   - Use TaskCreate/TaskUpdate to maintain task continuity
+   - Keep the task list updated to maintain task continuity
    - Reference the handoff document in commits
    - Document any deviations from original plan
    - Consider creating a new handoff when done
@@ -202,7 +188,7 @@ Then wait for the user's input.
 ## Example Interaction Flow
 
 ```
-User: /rpiv-next:resume-handoff thoughts/shared/handoffs/2025-01-08_14-30-15_webhook-validation.md
+User: /skill:resume-handoff thoughts/shared/handoffs/2025-01-08_14-30-15_webhook-validation.md
 Assistant: Let me read and analyze that handoff document...
 
 [Reads handoff completely]

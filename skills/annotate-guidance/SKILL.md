@@ -25,11 +25,11 @@ Use the current working directory as the target project by default. If the user 
    - Spawn the following agents in parallel using the Agent tool:
 
    **Agent A — Project tree mapping:**
-   - subagent_type: `rpiv-next:codebase-locator`
+   - subagent_type: `codebase-locator`
    - Prompt: "Map the full project tree structure for [target directory]. List all directories and their contents, respecting .gitignore. Focus on source code directories, configuration files, and build artifacts. Return a complete tree view."
 
    **Agent B — Architecture and conventions:**
-   - subagent_type: `rpiv-next:codebase-locator`
+   - subagent_type: `codebase-locator`
    - Prompt: "Identify the architectural layers, folder roles, and framework conventions in [target directory]. Determine: What architecture pattern is used (clean architecture, MVC, monorepo, microservices, hexagonal, etc.)? What are the main layers/modules? What frameworks and languages are present? What build system is used? For each main layer/module, check if it contains internal sub-layers with distinct architectural roles. If it does, explicitly flag each sub-layer as a guidance target candidate with: (a) path, (b) role/responsibility, (c) approximate file count, (d) how its patterns differ from siblings. Frontend frameworks (Angular, React, Vue, etc.) almost always have distinct sub-layers — components, services, shared/base classes, state management — report each separately."
 
    - While agents run, read .gitignore yourself to understand exclusion rules
@@ -71,20 +71,7 @@ Use the current working directory as the target project by default. If the user 
 
      Does this look right? Should I add or remove any locations?
      ```
-   - Use **AskUserQuestion** to confirm targets:
-     ```
-     questions:
-       - question: "[N] guidance targets across [M] layers. Proceed with analysis?"
-         header: "Targets"
-         multiSelect: false
-         options:
-           - label: "Proceed (Recommended)"
-             description: "Analyze all proposed folders and write architecture.md files"
-           - label: "Add folders"
-             description: "I want to add more folders to the target list"
-           - label: "Remove folders"
-             description: "Some proposed folders should be skipped"
-     ```
+   - Use the `ask_user_question` tool with the following question: "[N] guidance targets across [M] layers. Proceed with analysis?". Options: "Proceed (Recommended)" (Analyze all proposed folders and write architecture.md files); "Add folders" (I want to add more folders to the target list); "Remove folders" (Some proposed folders should be skipped).
    - Adjust the target list based on user feedback
 
 4. **Pass 2 — Analyze each layer (parallel analyzer agents):**
@@ -93,11 +80,11 @@ Use the current working directory as the target project by default. If the user 
    **For each target folder, spawn TWO agents:**
 
    **Analyzer agent:**
-   - subagent_type: `rpiv-next:codebase-analyzer`
+   - subagent_type: `codebase-analyzer`
    - Prompt: "Analyze [folder path] in detail. Determine: 1) What is this layer's responsibility? 2) What are its dependencies (what does it import/use)? 3) Who consumes it (what imports/uses it)? 4) What are the key architectural boundaries and constraints? 5) What is the module structure — list DIRECTORIES with their roles, base types, and naming conventions. Use architectural annotations (e.g., 'one repo per entity', 'one controller per resource') instead of listing individual filenames. The structure should remain valid when non-architectural files are added. 6) What naming conventions are used (prefixes, suffixes, base classes)?"
 
    **Pattern finder agent:**
-   - subagent_type: `rpiv-next:codebase-pattern-finder`
+   - subagent_type: `codebase-pattern-finder`
    - Prompt: "Find all distinct code patterns used in [folder path]. For each pattern found: 1) Name the pattern with a descriptive heading (e.g., 'Repository Boundary (CRITICAL: Plain Types, NOT Result<T>)'). 2) Provide an IDIOMATIC code example — a generalized, representative version that shows the pattern's essential shape (constructor, key method signatures, return types, error handling). Do NOT copy-paste a single file verbatim; instead synthesize the typical usage across the layer. 3) Add inline comments highlighting important conventions (e.g., '// DB int → boolean', '// throws on error — service wraps in Result'). 4) If the pattern involves a boundary between layers, show both sides. 5) Identify any repeatable workflows for adding new elements to this layer — backend entities (repositories, services, controllers) AND frontend elements (components, services, pages/routes, directives). For example: creating a new repository requires extending BaseRepository + registering in factory; adding a new Angular component requires extending BaseComponent + adding to routes + creating the template. Return these as step-by-step checklists. Return patterns with full code block examples."
 
    - Spawn 1 analyzer + 1 pattern finder per folder, all in parallel
@@ -145,28 +132,17 @@ Use the current working directory as the target project by default. If the user 
 
    **Choosing question format:**
 
-   - **AskUserQuestion** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
-
-         AskUserQuestion:
-           questions:
-             - question: "Found 2 mapping approaches — which should new code follow?"
-               header: "Pattern"
-               multiSelect: false
-               options:
-                 - label: "Manual mapping (Recommended)"
-                   description: "Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences"
-                 - label: "AutoMapper"
-                   description: "Used in UserService (src/services/UserService.ts:12) — 2 occurrences"
+   - **`ask_user_question` tool** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example: Use the `ask_user_question` tool with the question "Found 2 mapping approaches — which should new code follow?". Options: "Manual mapping (Recommended)" (Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences); "AutoMapper" (Used in UserService (src/services/UserService.ts:12) — 2 occurrences).
 
    - **Free-text with ❓ Question: prefix** — when the question is open-ended and options can't be predicted (discovery, "what am I missing?", corrections). Example:
      "❓ Question: Integration scanner found no background job registration for this area. Is that expected, or is there async processing I'm not seeing?"
 
-   **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single AskUserQuestion call. Keep dependent questions sequential.
+   **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
    **Incorporate developer input:**
 
    **Corrections** ("that pattern is deprecated", "wrong — we use X"):
-   - Update synthesis. If the correction reveals a pattern that needs fresh analysis, re-prompt a targeted **rpiv-next:codebase-analyzer** or **rpiv-next:codebase-pattern-finder** (max 2 agents).
+   - Update synthesis. If the correction reveals a pattern that needs fresh analysis, re-prompt a targeted **codebase-analyzer** or **codebase-pattern-finder** (max 2 agents).
 
    **Missing conventions** ("you missed the soft-delete convention", "all handlers must be idempotent"):
    - Add directly to synthesis for the relevant folder.
@@ -251,7 +227,7 @@ Use the current working directory as the target project by default. If the user 
 
 ## Root Architecture Template (compact):
 
-Read the full template at `${CLAUDE_SKILL_DIR}/templates/root-architecture.md`.
+Read the full template at `templates/root-architecture.md`.
 
 Key principles:
 - Bare sections (Overview, Architecture, Commands, Business Context) are foundational — always included
@@ -261,7 +237,7 @@ Key principles:
 
 ### Root Architecture Reference Examples
 
-See `${CLAUDE_SKILL_DIR}/examples/root-nodejs-monorepo.md` (Node.js monorepo) and `${CLAUDE_SKILL_DIR}/examples/root-dotnet-clean-arch.md` (.NET Clean Architecture) for well-formed root architecture.md examples.
+See `examples/root-nodejs-monorepo.md` (Node.js monorepo) and `examples/root-dotnet-clean-arch.md` (.NET Clean Architecture) for well-formed root architecture.md examples.
 
 What makes these examples good:
 - **Bare sections** (Overview, Project map, Commands) are relevant to nearly every task — no wrapper needed
@@ -272,7 +248,7 @@ What makes these examples good:
 
 ## Subfolder Architecture Template (max 100 lines):
 
-Read the full template at `${CLAUDE_SKILL_DIR}/templates/subfolder-architecture.md`.
+Read the full template at `templates/subfolder-architecture.md`.
 
 Key principles:
 - Each distinct pattern gets its own H2 section with a fenced code block
@@ -283,9 +259,9 @@ Key principles:
 ### Reference Examples
 
 See the following for well-formed subfolder architecture.md examples:
-- `${CLAUDE_SKILL_DIR}/examples/subfolder-database-layer.md` — Database layer (~80 lines)
-- `${CLAUDE_SKILL_DIR}/examples/subfolder-schemas-layer.md` — Schemas layer (~70 lines)
-- `${CLAUDE_SKILL_DIR}/examples/subfolder-dotnet-application.md` — .NET Application layer (~65 lines)
+- `examples/subfolder-database-layer.md` — Database layer (~80 lines)
+- `examples/subfolder-schemas-layer.md` — Schemas layer (~70 lines)
+- `examples/subfolder-dotnet-application.md` — .NET Application layer (~65 lines)
 
 ### What makes these examples good:
 - **Module Structure**: Compact, uses architectural annotations, groups related files on one line

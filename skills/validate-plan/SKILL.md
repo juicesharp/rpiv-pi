@@ -5,11 +5,6 @@ argument-hint: [plan-path]
 allowed-tools: Read, Bash(git *), Bash(make *), Glob, Grep, Agent
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-- Recent commits: !`git log --oneline -20 2>/dev/null || echo "No git history available"`
-
 # Validate Plan
 
 You are tasked with validating that an implementation plan was correctly executed, verifying all success criteria and identifying any deviations or issues.
@@ -41,7 +36,7 @@ When invoked:
 
 If starting fresh or need more context:
 
-   **If Git Context above shows "not a git repo":**
+   **If the injected git context shows "not a git repo":**
    - Skip git-based evidence gathering (git log, git diff)
    - Validate via file inspection, automated test commands, and plan checklist
    - Note in report: "Git history unavailable — validation based on file inspection only"
@@ -171,9 +166,9 @@ Always verify:
 ## Relationship to Other Skills
 
 Recommended workflow:
-1. `/rpiv-next:implement-plan` - Execute the implementation
-2. `/rpiv-next:commit` - Create atomic commits for changes
-3. `/rpiv-next:validate-plan` - Verify implementation correctness
+1. `/skill:implement-plan` - Execute the implementation
+2. `/skill:commit` - Create atomic commits for changes
+3. `/skill:validate-plan` - Verify implementation correctness
 
 The validation works best after commits are made, as it can analyze the git history to understand what was implemented.
 

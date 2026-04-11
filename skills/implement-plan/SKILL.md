@@ -7,7 +7,8 @@ disable-model-invocation: true
 ---
 
 ## Task
-$ARGUMENTS
+
+If the user has not already provided a specific plan path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Implement Plan
 
@@ -46,21 +47,7 @@ If you encounter a mismatch:
 
   ```
 
-  Use **AskUserQuestion** to resolve the mismatch:
-
-  ```
-  questions:
-    - question: "[Brief summary of the mismatch]"
-      header: "Mismatch"
-      multiSelect: false
-      options:
-        - label: "Follow the plan"
-          description: "Adapt the plan's approach to the current code state"
-        - label: "Skip this change"
-          description: "Move on without this change — it may not be needed"
-        - label: "Update the plan"
-          description: "The plan needs to be revised before continuing"
-  ```
+  Use the `ask_user_question` tool to resolve the mismatch. Question: "[Brief summary of the mismatch]". Header: "Mismatch". Options: "Follow the plan" (Adapt the plan's approach to the current code state); "Skip this change" (Move on without this change — it may not be needed); "Update the plan" (The plan needs to be revised before continuing).
 
 ## Verification Approach
 

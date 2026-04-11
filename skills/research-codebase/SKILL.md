@@ -4,12 +4,9 @@ description: Conduct comprehensive codebase research by spawning parallel skills
 argument-hint: [research question or task/ticket description]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 ## Research Question
-$ARGUMENTS
+
+If the user has not already provided a specific research question or task description, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Research Codebase
 
@@ -36,26 +33,25 @@ Then wait for the user's research query.
    - Break down the user's query into composable research areas
    - Take time to ultrathink about the underlying patterns, connections, and architectural implications the user might be seeking
    - Identify specific components, patterns, or concepts to investigate
-   - Create a research plan using TaskCreate to track all subtasks
    - Consider which directories, files, or architectural patterns are relevant
 
 3. **Spawn parallel agents for comprehensive research:**
    - Spawn multiple agents to research different aspects concurrently using the Agent tool
    **For codebase research:**
-   - Use the **rpiv-next:codebase-locator** agent to find WHERE files and components live
-   - Use the **rpiv-next:codebase-analyzer** agent to understand HOW specific code works
-   - Use the **rpiv-next:codebase-pattern-finder** agent if you need examples of similar implementations
-   - Use the **rpiv-next:integration-scanner** agent to find what CONNECTS to the affected area — inbound references, outbound dependencies, DI registrations, event subscriptions, config wiring. Always spawn this agent when researching a component that will be modified or extended.
+   - Use the **codebase-locator** agent to find WHERE files and components live
+   - Use the **codebase-analyzer** agent to understand HOW specific code works
+   - Use the **codebase-pattern-finder** agent if you need examples of similar implementations
+   - Use the **integration-scanner** agent to find what CONNECTS to the affected area — inbound references, outbound dependencies, DI registrations, event subscriptions, config wiring. Always spawn this agent when researching a component that will be modified or extended.
 
    **For thoughts directory:**
-   - Use the **rpiv-next:thoughts-locator** agent to discover what documents exist about the topic
-   - Use the **rpiv-next:thoughts-analyzer** agent to extract key insights from specific documents
+   - Use the **thoughts-locator** agent to discover what documents exist about the topic
+   - Use the **thoughts-analyzer** agent to extract key insights from specific documents
 
    **For change precedents (when research will feed into a plan):**
-   - Use the **rpiv-next:precedent-locator** agent to find WHAT WENT WRONG in similar past changes — commits, blast radius, follow-up fixes, and lessons from related thoughts/ docs. Spawn this when the research topic involves adding, modifying, or refactoring a component.
+   - Use the **precedent-locator** agent to find WHAT WENT WRONG in similar past changes — commits, blast radius, follow-up fixes, and lessons from related thoughts/ docs. Spawn this when the research topic involves adding, modifying, or refactoring a component.
 
    **For web research (only if user explicitly asks):**
-   - Use the **rpiv-next:web-search-researcher** agent for external documentation and resources
+   - Use the **web-search-researcher** agent for external documentation and resources
    - IF you use web-research agents, instruct them to return LINKS with their findings, and please INCLUDE those links in your final report
 
    The key is to use these agents intelligently:
@@ -97,23 +93,12 @@ Then wait for the user's research query.
 
    **Choosing question format:**
 
-   - **AskUserQuestion** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
-
-         AskUserQuestion:
-           questions:
-             - question: "Found 2 mapping approaches — which should new code follow?"
-               header: "Pattern"
-               multiSelect: false
-               options:
-                 - label: "Manual mapping (Recommended)"
-                   description: "Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences"
-                 - label: "AutoMapper"
-                   description: "Used in UserService (src/services/UserService.ts:12) — 2 occurrences"
+   - **ask_user_question tool** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example: use `ask_user_question` with question "Found 2 mapping approaches — which should new code follow?", header "Pattern", options "Manual mapping (Recommended)" (Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences); "AutoMapper" (Used in UserService (src/services/UserService.ts:12) — 2 occurrences).
 
    - **Free-text with ❓ Question: prefix** — when the question is open-ended and options can't be predicted (discovery, "what am I missing?", corrections). Example:
      "❓ Question: Integration scanner found no background job registration for this area. Is that expected, or is there async processing I'm not seeing?"
 
-   **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single AskUserQuestion call. Keep dependent questions sequential.
+   **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
    After all grounded questions, present the compiled scan. Keep it under 30 lines — one line per layer, no sub-bullets. The full detail goes in the research document.
 
@@ -141,7 +126,7 @@ Then wait for the user's research query.
    - Incorporate directly into synthesis. Record in Developer Context.
 
    **New areas** (e.g., "you missed the events module", "check the notification pipeline"):
-   - Spawn targeted rescan: **rpiv-next:codebase-locator** + **rpiv-next:codebase-analyzer** on the new area (max 2 agents).
+   - Spawn targeted rescan: **codebase-locator** + **codebase-analyzer** on the new area (max 2 agents).
    - Merge results into synthesis. Record in Developer Context.
 
    **Decisions** (e.g., "yes, hook into that event chain", "no, leave that as-is"):
@@ -157,7 +142,7 @@ Then wait for the user's research query.
      - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
      - topic: Brief kebab-case description of the research topic
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the "Git Context" section above
+   - Determine branch and commit by running `git branch --show-current` and `git rev-parse --short HEAD`
    - Researcher: Use "Claude Code"
    - If metadata unavailable: use "unknown" for commit/branch
 

@@ -4,12 +4,9 @@ description: Answer structured research questions via targeted parallel analysis
 argument-hint: [path to research-questions artifact]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 ## Questions Source
-$ARGUMENTS
+
+If the user has not already provided a specific research-questions artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Research
 
@@ -27,7 +24,7 @@ You are tasked with answering structured research questions by spawning targeted
    **No arguments provided:**
    ```
    I'll answer research questions from a questions artifact. Please provide the path:
-   `/rpiv-next:research thoughts/shared/questions/YYYY-MM-DD_HH-MM-SS_topic.md`
+   `/skill:research thoughts/shared/questions/YYYY-MM-DD_HH-MM-SS_topic.md`
 
    This skill requires a questions artifact from research-questions.
    For standalone research, use research-codebase instead.
@@ -52,9 +49,9 @@ You are tasked with answering structured research questions by spawning targeted
 
 Spawn analysis agents using the Agent tool. All agents run in parallel.
 
-**Default agent**: `rpiv-next:codebase-analyzer` for all codebase questions. This agent has Read, Grep, Glob, LS — it can trace code paths, find patterns, and analyze integration points.
+**Default agent**: `codebase-analyzer` for all codebase questions. This agent has Read, Grep, Glob, LS — it can trace code paths, find patterns, and analyze integration points.
 
-**Exception**: Questions that explicitly reference external documentation, web APIs, or third-party libraries → `rpiv-next:web-search-researcher`.
+**Exception**: Questions that explicitly reference external documentation, web APIs, or third-party libraries → `web-search-researcher`.
 
 **Agent prompt — question-as-prompt:**
 
@@ -85,7 +82,7 @@ For each question, provide your analysis with exact file:line references. Note c
 ```
 
 **Precedent sweep (always spawn):**
-Spawn one `rpiv-next:precedent-locator` agent alongside the question agents:
+Spawn one `precedent-locator` agent alongside the question agents:
 "Find similar past changes involving [list key files from Discovery Summary]. Search git log for commits that touched these files, similar commit messages, and follow-up fixes. Research topic: [original query]."
 
 This agent runs with full knowledge of discovered files — its findings go into Precedents & Lessons, not tied to a specific question.
@@ -121,10 +118,10 @@ This agent runs with full knowledge of discovered files — its findings go into
 
    **Choosing question format:**
 
-   - **AskUserQuestion** — when your question has 2-4 concrete options from analysis (pattern conflicts, integration choices, scope boundaries). The user can always pick "Other" for free-text.
+   - **ask_user_question tool** — when your question has 2-4 concrete options from analysis (pattern conflicts, integration choices, scope boundaries). The user can always pick "Other" for free-text.
    - **Free-text with Question: prefix** — when the question is open-ended and options can't be predicted.
 
-   **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single AskUserQuestion call. Keep dependent questions sequential.
+   **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
    **CRITICAL**: Ask ONE question at a time. Wait for the answer before asking the next. Lead with your most significant finding.
 
@@ -153,7 +150,7 @@ This agent runs with full knowledge of discovered files — its findings go into
    - Incorporate directly into synthesis. Record in Developer Context.
 
    **New areas** (e.g., "you missed the events module"):
-   - Spawn targeted rescan: **rpiv-next:codebase-locator** + **rpiv-next:codebase-analyzer** on the new area (max 2 agents).
+   - Spawn targeted rescan: **codebase-locator** + **codebase-analyzer** on the new area (max 2 agents).
    - Merge results into synthesis. Record in Developer Context.
 
    **Decisions** (e.g., "yes, hook into that event chain"):
@@ -171,7 +168,7 @@ This agent runs with full knowledge of discovered files — its findings go into
      - YYYY-MM-DD_HH-MM-SS: Current date and time
      - topic: Brief kebab-case description
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the "Git Context" section above
+   - Determine branch and commit by running `git branch --show-current` and `git rev-parse --short HEAD`
    - Researcher: "Claude Code"
    - If metadata unavailable: use "unknown" for commit/branch
 
@@ -261,9 +258,9 @@ Research document written to:
 Please review and let me know if you have follow-up questions.
 
 When ready:
-- For complex features: `/rpiv-next:design-feature thoughts/shared/research/[filename].md`
-- For complex multi-layer features (6+ files): `/rpiv-next:design-feature-iterative thoughts/shared/research/[filename].md`
-- For straightforward changes: `/rpiv-next:create-plan thoughts/shared/research/[filename].md`
+- For complex features: `/skill:design-feature thoughts/shared/research/[filename].md`
+- For complex multi-layer features (6+ files): `/skill:design-feature-iterative thoughts/shared/research/[filename].md`
+- For straightforward changes: `/skill:create-plan thoughts/shared/research/[filename].md`
 ```
 
 ## Step 6: Handle Follow-ups

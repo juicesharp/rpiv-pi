@@ -4,14 +4,12 @@ description: Create detailed implementation plans through interactive collaborat
 argument-hint: [task description or file path]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
-## Task Input
-$ARGUMENTS
-
 # Implementation Plan
+
+## Task
+
+If the user has not already provided a task description or a path to a ticket/research file, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
+
 
 You are tasked with creating detailed implementation plans through an interactive, iterative process. You should be skeptical, thorough, and work collaboratively with the user to produce high-quality technical specifications.
 
@@ -35,8 +33,8 @@ Please provide:
 
 I'll analyze this information and work with you to create a comprehensive plan.
 
-Tip: You can also invoke this command with a ticket file directly: `/rpiv-next:create-plan thoughts/me/tickets/eng_1234.md`
-For deeper analysis, try: `/rpiv-next:create-plan think deeply about thoughts/me/tickets/eng_1234.md`
+Tip: You can also invoke this command with a ticket file directly: `/skill:create-plan thoughts/me/tickets/eng_1234.md`
+For deeper analysis, try: `/skill:create-plan think deeply about thoughts/me/tickets/eng_1234.md`
 ```
 
 Then wait for the user's input.
@@ -57,11 +55,11 @@ Then wait for the user's input.
 2. **Spawn initial research agents to gather context**:
    Before asking the user any questions, use the Agent tool to spawn parallel research agents:
 
-   - Use the **rpiv-next:codebase-locator** agent to find all files related to the ticket/task
-   - Use the **rpiv-next:codebase-analyzer** agent to understand how the current implementation works
-   - Use the **rpiv-next:integration-scanner** agent to find what CONNECTS to the affected area — inbound references, outbound dependencies, DI registrations, event subscriptions, config wiring. Always spawn this agent when planning changes to an existing component.
-   - If relevant, use the **rpiv-next:thoughts-locator** agent to find any existing thoughts documents about this feature
-   - Use the **rpiv-next:precedent-locator** agent to find similar past changes — what commits introduced comparable features, what broke, and what lessons apply to this plan
+   - Use the **codebase-locator** agent to find all files related to the ticket/task
+   - Use the **codebase-analyzer** agent to understand how the current implementation works
+   - Use the **integration-scanner** agent to find what CONNECTS to the affected area — inbound references, outbound dependencies, DI registrations, event subscriptions, config wiring. Always spawn this agent when planning changes to an existing component.
+   - If relevant, use the **thoughts-locator** agent to find any existing thoughts documents about this feature
+   - Use the **precedent-locator** agent to find similar past changes — what commits introduced comparable features, what broke, and what lessons apply to this plan
 
    These agents will:
    - Find relevant source files, configs, and tests
@@ -108,19 +106,19 @@ After getting initial clarifications:
    - Read the specific files/directories they mention
    - Only proceed once you've verified the facts yourself
 
-2. **Create a research task list** using TaskCreate to track exploration tasks
+2. **Create a research task list** using the `todo` tool to track exploration tasks
 
 3. **Spawn parallel agents for comprehensive research**:
    - Spawn multiple agents to research different aspects concurrently using the Agent tool
    **For deeper investigation:**
-   - Use the **rpiv-next:codebase-locator** agent to find more specific files (e.g., "find all files that handle [specific component]")
-   - Use the **rpiv-next:codebase-analyzer** agent to understand implementation details (e.g., "analyze how [system] works")
-   - Use the **rpiv-next:codebase-pattern-finder** agent to find similar features we can model after
-   - Use the **rpiv-next:integration-scanner** agent to find what connects to the affected area (inbound refs, outbound deps, DI, events, config wiring)
+   - Use the **codebase-locator** agent to find more specific files (e.g., "find all files that handle [specific component]")
+   - Use the **codebase-analyzer** agent to understand implementation details (e.g., "analyze how [system] works")
+   - Use the **codebase-pattern-finder** agent to find similar features we can model after
+   - Use the **integration-scanner** agent to find what connects to the affected area (inbound refs, outbound deps, DI, events, config wiring)
 
    **For historical context:**
-   - Use the **rpiv-next:thoughts-locator** agent to find any research, plans, or decisions in thoughts/ about this area
-   - Use the **rpiv-next:thoughts-analyzer** agent to extract key insights from the most relevant documents
+   - Use the **thoughts-locator** agent to find any research, plans, or decisions in thoughts/ about this area
+   - Use the **thoughts-analyzer** agent to extract key insights from the most relevant documents
 
    Each agent will:
    - Find the right files and code patterns
@@ -150,19 +148,7 @@ After getting initial clarifications:
    Which approach aligns best with your vision?
    ```
 
-   When presenting design options, use **AskUserQuestion** if you have 2-4 concrete options:
-
-   ```
-   questions:
-     - question: "[Summary]. Which approach?"
-       header: "Approach"
-       multiSelect: false
-       options:
-         - label: "[Option A name] (Recommended)"
-           description: "[One-line pro/con summary]"
-         - label: "[Option B name]"
-           description: "[One-line pro/con summary]"
-   ```
+   When presenting design options, use the `ask_user_question` tool if you have 2-4 concrete options. Question: "[Summary]. Which approach?". Header: "Approach". Options: "[Option A name] (Recommended)" ([One-line pro/con summary]); "[Option B name]" ([One-line pro/con summary]).
 
 ### Step 3: Plan Structure Development
 
@@ -183,21 +169,7 @@ Once aligned on approach:
    Does this phasing make sense? Should I adjust the order or granularity?
    ```
 
-   Use **AskUserQuestion** to confirm the phase structure:
-
-   ```
-   questions:
-     - question: "[N] phases. Does this structure work?"
-       header: "Phases"
-       multiSelect: false
-       options:
-         - label: "Proceed (Recommended)"
-           description: "Write the detailed implementation plan"
-         - label: "Adjust phases"
-           description: "Split, merge, or reorder phases before writing"
-         - label: "Change scope"
-           description: "Add or remove items from the plan"
-   ```
+   Use the `ask_user_question` tool to confirm the phase structure. Question: "[N] phases. Does this structure work?". Header: "Phases". Options: "Proceed (Recommended)" (Write the detailed implementation plan); "Adjust phases" (Split, merge, or reorder phases before writing); "Change scope" (Add or remove items from the plan).
 
 2. **Get feedback on structure** before writing details
 
@@ -374,7 +346,7 @@ last_updated_by: Claude Code
    - Include "what we're NOT doing"
 
 5. **Track Progress**:
-   - Use TaskCreate/TaskUpdate to track planning tasks
+   - Use the `todo` tool to track planning tasks
    - Update todos as you complete research
    - Mark planning tasks complete when done
 
@@ -455,7 +427,7 @@ When spawning research agents:
    - If the ticket mentions a specific module, specify that module's directory explicitly
    - Never use generic terms when a specific directory name exists
    - Include the full path context in your prompts
-5. **Use named agents** — `rpiv-next:codebase-locator`, `rpiv-next:codebase-analyzer`, `rpiv-next:codebase-pattern-finder`, `rpiv-next:thoughts-locator`, `rpiv-next:thoughts-analyzer`, `rpiv-next:web-search-researcher`
+5. **Use named agents** — `codebase-locator`, `codebase-analyzer`, `codebase-pattern-finder`, `thoughts-locator`, `thoughts-analyzer`, `web-search-researcher`
 6. **Request specific file:line references** in responses
 7. **Wait for all agents to complete** before synthesizing
 8. **Verify agent results**:
@@ -467,18 +439,18 @@ Example of spawning multiple agents:
 
 To spawn multiple agents concurrently, use multiple Agent tool calls in a single response:
 
-1. Agent (rpiv-next:codebase-locator): "Find all database-related files in [directory]..."
-2. Agent (rpiv-next:codebase-analyzer): "Analyze the API request handling in [directory]..."
-3. Agent (rpiv-next:integration-scanner): "Find what connects to the order processing module in [directory]..."
-4. Agent (rpiv-next:codebase-pattern-finder): "Find UI component patterns in [directory]..."
-5. Agent (rpiv-next:thoughts-locator): "Find test-related research and plans in thoughts/..."
+1. Agent (codebase-locator): "Find all database-related files in [directory]..."
+2. Agent (codebase-analyzer): "Analyze the API request handling in [directory]..."
+3. Agent (integration-scanner): "Find what connects to the order processing module in [directory]..."
+4. Agent (codebase-pattern-finder): "Find UI component patterns in [directory]..."
+5. Agent (thoughts-locator): "Find test-related research and plans in thoughts/..."
 
 Each agent runs in an isolated context and returns its findings independently.
 
 ## Example Interaction Flow
 
 ```
-User: /rpiv-next:create-plan
+User: /skill:create-plan
 Assistant: I'll help you create a detailed implementation plan...
 
 User: We need to add parent-child tracking for Claude sub-tasks. See thoughts/me/tickets/eng_1478.md

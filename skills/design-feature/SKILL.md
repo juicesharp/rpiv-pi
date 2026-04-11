@@ -4,14 +4,12 @@ description: Design how code will be shaped through interactive architectural co
 argument-hint: [research artifact path or feature description]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
-## Task Input
-$ARGUMENTS
-
 # Design Feature
+
+## Task
+
+If the user has not already provided a research artifact path or a feature description, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
+
 
 You are tasked with designing how code will be shaped for a feature or change. You resolve ambiguities through interactive developer checkpoints, fix architectural decisions, and produce a design artifact containing full implementation code. The design artifact feeds directly into write-plan, which sequences it into phases.
 
@@ -39,8 +37,8 @@ When this command is invoked:
    **No arguments provided**:
    ```
    I'll help you design a feature's architecture. Please provide either:
-   1. A research artifact path: `/rpiv-next:design-feature thoughts/shared/research/2025-01-20_file.md`
-   2. A feature description: `/rpiv-next:design-feature Add notification toast system using existing Zustand + HeadlessUI patterns`
+   1. A research artifact path: `/skill:design-feature thoughts/shared/research/2025-01-20_file.md`
+   2. A feature description: `/skill:design-feature Add notification toast system using existing Zustand + HeadlessUI patterns`
 
    Chained mode (with research) produces better designs for complex or unfamiliar areas.
    Standalone mode works well when you already know the area.
@@ -56,18 +54,18 @@ This is NOT research-codebase. Focus on DEPTH (how things work, what patterns to
 1. **Spawn parallel research agents** using the Agent tool:
 
    **Chained mode** (research artifact provided — files already located):
-   - Use **rpiv-next:codebase-pattern-finder** to find existing implementations to model after — the primary template for code shape
-   - Use **rpiv-next:codebase-analyzer** to understand HOW integration points work in detail
-   - Use **rpiv-next:integration-scanner** to map the wiring surface — inbound refs, outbound deps, config/DI/event registration
-   - Use **rpiv-next:precedent-locator** to find similar past changes in git history — what commits introduced comparable features, what broke, and what lessons apply to this design
+   - Use **codebase-pattern-finder** to find existing implementations to model after — the primary template for code shape
+   - Use **codebase-analyzer** to understand HOW integration points work in detail
+   - Use **integration-scanner** to map the wiring surface — inbound refs, outbound deps, config/DI/event registration
+   - Use **precedent-locator** to find similar past changes in git history — what commits introduced comparable features, what broke, and what lessons apply to this design
 
    **Standalone mode** (no prior research — need initial discovery):
-   - Use **rpiv-next:codebase-locator** to find relevant files and components first
-   - Use **rpiv-next:thoughts-locator** to find existing research, decisions, or plans in thoughts/ about this feature area
+   - Use **codebase-locator** to find relevant files and components first
+   - Use **thoughts-locator** to find existing research, decisions, or plans in thoughts/ about this feature area
    - Then spawn the same depth agents as chained mode (codebase-pattern-finder, codebase-analyzer, integration-scanner, precedent-locator)
 
    **Novel work** (new libraries, first-time patterns, no existing codebase precedent):
-   - Add **rpiv-next:web-search-researcher** for external documentation, API references, and community patterns
+   - Add **web-search-researcher** for external documentation, API references, and community patterns
    - Instruct it to return LINKS with findings — include those links in the final design artifact
 
    Agent prompts should focus on:
@@ -125,23 +123,14 @@ Use the grounded-questions-one-at-a-time pattern. Use a **❓ Question:** prefix
 
 **Choosing question format:**
 
-- **AskUserQuestion** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
+- **`ask_user_question` tool** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
 
-      AskUserQuestion:
-        questions:
-          - question: "Found 2 mapping approaches — which should new code follow?"
-            header: "Pattern"
-            multiSelect: false
-            options:
-              - label: "Manual mapping (Recommended)"
-                description: "Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences"
-              - label: "AutoMapper"
-                description: "Used in UserService (src/services/UserService.ts:12) — 2 occurrences"
+  > Use the `ask_user_question` tool with the following question: "Found 2 mapping approaches — which should new code follow?". Header: "Pattern". Options: "Manual mapping (Recommended)" (Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences); "AutoMapper" (Used in UserService (src/services/UserService.ts:12) — 2 occurrences).
 
 - **Free-text with ❓ Question: prefix** — when the question is open-ended and options can't be predicted (discovery, "what am I missing?", corrections). Example:
   "❓ Question: Integration scanner found no background job registration for this area. Is that expected, or is there async processing I'm not seeing?"
 
-**Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single AskUserQuestion call. Keep dependent questions sequential.
+**Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
 **Classify each response:**
 
@@ -149,7 +138,7 @@ Use the grounded-questions-one-at-a-time pattern. Use a **❓ Question:** prefix
 - Record in Developer Context. Fix in Decisions section.
 
 **Correction** (e.g., "no, there's a third option you missed", "check the events module"):
-- Spawn targeted rescan: **rpiv-next:codebase-analyzer** on the new area (max 1-2 agents).
+- Spawn targeted rescan: **codebase-analyzer** on the new area (max 1-2 agents).
 - Merge results. Update ambiguity assessment.
 
 **Scope adjustment** (e.g., "skip the UI, backend only", "include tests"):
@@ -170,21 +159,7 @@ Scope: [what's in] | Not building: [what's out]
 Files: [N] new, [M] modified
 ```
 
-Use **AskUserQuestion** to confirm before proceeding:
-
-```
-questions:
-  - question: "[Summary from design brief above]. Ready to proceed to the design document?"
-    header: "Design"
-    multiSelect: false
-    options:
-      - label: "Proceed (Recommended)"
-        description: "Write the full design document with architecture code"
-      - label: "Adjust decisions"
-        description: "Revisit one or more architectural decisions above"
-      - label: "Change scope"
-        description: "Add or remove items from the building/not-building lists"
-```
+Use the `ask_user_question` tool to confirm before proceeding. Question: "[Summary from design brief above]. Ready to proceed to the design document?". Header: "Design". Options: "Proceed (Recommended)" (Write the full design document with architecture code); "Adjust decisions" (Revisit one or more architectural decisions above); "Change scope" (Add or remove items from the building/not-building lists).
 
 ## Step 5: Produce Architecture Code
 
@@ -212,7 +187,7 @@ This is the core deliverable — write FULL implementation code for every compon
    - When a constraint or workaround is discovered for one target, check all other targets for the same condition
 
 5. **If additional context is needed** to write accurate code for a file:
-   - Spawn a targeted **rpiv-next:codebase-analyzer** agent to read and understand the file
+   - Spawn a targeted **codebase-analyzer** agent to read and understand the file
    - Wait for the result before writing the modified version
 
 **The code must be copy-pasteable** by implement-plan. No pseudocode, no TODOs, no "// implement here" placeholders. If you can't write complete code for a section, that's a signal an ambiguity wasn't resolved — go back to the developer checkpoint.
@@ -228,7 +203,7 @@ This is the core deliverable — write FULL implementation code for every compon
      - YYYY-MM-DD_HH-MM-SS: Current date and time
      - topic: Brief kebab-case description
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the "Git Context" section above
+   - Determine the current git branch and short commit hash via `git` (fall back to "no-branch" / "no-commit" if not a git repo)
    - Designer: "Claude Code"
    - If metadata unavailable: use "unknown" for commit/branch
 
@@ -375,7 +350,7 @@ This is the core deliverable — write FULL implementation code for every compon
    - Does the code match what you envision?
    - Any missing integration points or edge cases?
 
-   When ready, run `/rpiv-next:write-plan thoughts/shared/designs/[filename].md` to sequence into phases.
+   When ready, run `/skill:write-plan thoughts/shared/designs/[filename].md` to sequence into phases.
    ```
 
 2. **Handle follow-up changes**:
@@ -397,7 +372,7 @@ This is the core deliverable — write FULL implementation code for every compon
 
 5. **Resolve Everything**: No unresolved questions in the final artifact. If something is ambiguous, ask during the checkpoint. The design must be complete enough that create-plan can mechanically decompose it into phases.
 
-6. **Track Progress**: Use TaskCreate/TaskUpdate to track design tasks, especially for complex multi-component designs.
+6. **Track Progress**: Use the `todo` tool to track design tasks, especially for complex multi-component designs.
 
 ## Agent Usage
 

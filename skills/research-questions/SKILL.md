@@ -4,12 +4,9 @@ description: Generate trace-quality research questions from codebase discovery. 
 argument-hint: [research question or task/ticket description]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 ## Research Topic
-$ARGUMENTS
+
+If the user has not already provided a specific research question or task description, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Research Questions
 
@@ -39,13 +36,12 @@ Then wait for the user's research query.
 1. **Analyze the research question:**
    - Break down the user's query into composable discovery areas
    - Identify specific components, patterns, or concepts to locate
-   - Create a research plan using TaskCreate
 
 2. **Spawn parallel discovery agents** using the Agent tool:
 
-   - Use **rpiv-next:codebase-locator** — spawn one per decomposed area from Step 1. If the research decomposes into 3 areas, spawn 3 locators, each searching exhaustively within its area. A single broad locator misses files; multiple focused locators provide complete coverage.
-   - Use **rpiv-next:thoughts-locator** to find existing docs, decisions, and plans about the topic
-   - Use **rpiv-next:integration-scanner** to map connections — inbound refs, outbound deps, config/DI/event wiring
+   - Use **codebase-locator** — spawn one per decomposed area from Step 1. If the research decomposes into 3 areas, spawn 3 locators, each searching exhaustively within its area. A single broad locator misses files; multiple focused locators provide complete coverage.
+   - Use **thoughts-locator** to find existing docs, decisions, and plans about the topic
+   - Use **integration-scanner** to map connections — inbound refs, outbound deps, config/DI/event wiring
 
    Agent prompts should instruct locators to capture **function names, class/type names, and import paths** alongside file paths — not just locations. Example:
    - codebase-locator: "Find ALL files that [implement/call/emit/subscribe to/import] [specific component]. For each file, report the key function signatures, exported types, and import chains. Search exhaustively — grep for method names, class names, event strings."
@@ -117,19 +113,7 @@ Present the generated questions to the developer for review.
    <full question text for each, numbered to match>
    ```
 
-2. **Ask for review** using AskUserQuestion:
-
-   ```
-   questions:
-     - question: "[N] trace-quality research questions generated from discovery across [M] files. Review and adjust?"
-       header: "Questions"
-       multiSelect: false
-       options:
-         - label: "Looks good (Recommended)"
-           description: "Proceed to write the questions artifact as-is"
-         - label: "I want to adjust"
-           description: "Add, remove, or modify questions before proceeding"
-   ```
+2. **Ask for review** using the `ask_user_question` tool with the following question: "[N] trace-quality research questions generated from discovery across [M] files. Review and adjust?". Header: "Questions". Options: "Looks good (Recommended)" (Proceed to write the questions artifact as-is); "I want to adjust" (Add, remove, or modify questions before proceeding).
 
 3. **Handle developer input:**
 
@@ -149,7 +133,7 @@ Present the generated questions to the developer for review.
      - YYYY-MM-DD_HH-MM-SS: Current date and time
      - topic: Brief kebab-case description
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the "Git Context" section above
+   - Determine branch and commit by running `git branch --show-current` and `git rev-parse --short HEAD`
    - Researcher: "Claude Code"
    - If metadata unavailable: use "unknown" for commit/branch
 
@@ -193,7 +177,7 @@ Research questions written to:
 
 [N] trace-quality questions generated from [M] discovery findings across [K] files.
 
-When ready, run `/rpiv-next:research thoughts/shared/questions/[filename].md` to answer these questions.
+When ready, run `/skill:research thoughts/shared/questions/[filename].md` to answer these questions.
 ```
 
 ### Step 8: Handle Follow-ups

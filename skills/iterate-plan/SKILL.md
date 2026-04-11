@@ -5,10 +5,6 @@ argument-hint: "[plan-path] [feedback]"
 allowed-tools: Edit, Read, Bash(git *), Glob, Grep, Agent
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 # Iterate Implementation Plan
 
 You are tasked with updating existing implementation plans based on user feedback. You should be skeptical, thorough, and ensure changes are grounded in actual codebase reality.
@@ -69,26 +65,24 @@ When this command is invoked:
 
 If the user's feedback requires understanding new code patterns or validating assumptions:
 
-1. **Always create a task list** using TaskCreate (iteration tasks are multi-step by nature)
-
-2. **Spawn parallel agents for research** using the Agent tool:
+1. **Spawn parallel agents for research** using the Agent tool:
    **For code investigation:**
-   - Use the **rpiv-next:codebase-locator** agent to find relevant files
-   - Use the **rpiv-next:codebase-analyzer** agent to understand implementation details
-   - Use the **rpiv-next:codebase-pattern-finder** agent to find similar patterns
+   - Use the **codebase-locator** agent to find relevant files
+   - Use the **codebase-analyzer** agent to understand implementation details
+   - Use the **codebase-pattern-finder** agent to find similar patterns
 
    **For historical context:**
-   - Use the **rpiv-next:thoughts-locator** agent to find related research or decisions in thoughts/
-   - Use the **rpiv-next:thoughts-analyzer** agent to extract insights from documents
+   - Use the **thoughts-locator** agent to find related research or decisions in thoughts/
+   - Use the **thoughts-analyzer** agent to extract insights from documents
 
    **Be EXTREMELY specific about directories**:
    - Include full path context in prompts
 
-3. **Read any new files identified by research**:
+2. **Read any new files identified by research**:
    - Read them FULLY into the main context
    - Cross-reference with the plan requirements
 
-4. **Wait for ALL agents to complete** before proceeding
+3. **Wait for ALL agents to complete** before proceeding
 
 ### Step 3: Present Understanding and Approach
 
@@ -110,21 +104,7 @@ I plan to update the plan by:
 Does this align with your intent?
 ```
 
-Use **AskUserQuestion** to confirm before editing:
-
-```
-questions:
-  - question: "[Summary of planned modifications]. Proceed with these edits?"
-    header: "Changes"
-    multiSelect: false
-    options:
-      - label: "Proceed (Recommended)"
-        description: "Apply the planned changes to the existing plan"
-      - label: "Adjust approach"
-        description: "Modify what will be changed before editing"
-      - label: "Show me first"
-        description: "Show the exact text changes before applying"
-```
+Use the `ask_user_question` tool to confirm before editing. Question: "[Summary of planned modifications]. Proceed with these edits?". Header: "Changes". Options: "Proceed (Recommended)" (Apply the planned changes to the existing plan); "Adjust approach" (Modify what will be changed before editing); "Show me first" (Show the exact text changes before applying).
 
 ### Step 4: Update the Plan
 
@@ -195,7 +175,6 @@ questions:
    - Don't disappear into research without communicating
 
 5. **Track Progress**:
-   - Always use TaskCreate/TaskUpdate to track update tasks
    - Update todos as you complete research
    - Mark tasks complete when done
 
@@ -240,13 +219,13 @@ When spawning research agents:
 
 **Scenario 1: User provides everything upfront**
 ```
-User: /rpiv-next:iterate-plan thoughts/shared/plans/2025-10-16_09-00-00_feature.md - add phase for error handling
+User: /skill:iterate-plan thoughts/shared/plans/2025-10-16_09-00-00_feature.md - add phase for error handling
 Assistant: [Reads plan, researches error handling patterns, updates plan]
 ```
 
 **Scenario 2: User provides just plan file**
 ```
-User: /rpiv-next:iterate-plan thoughts/shared/plans/2025-10-16_09-00-00_feature.md
+User: /skill:iterate-plan thoughts/shared/plans/2025-10-16_09-00-00_feature.md
 Assistant: I've found the plan. What changes would you like to make?
 User: Split Phase 2 into two phases - one for backend, one for frontend
 Assistant: [Proceeds with update]
@@ -254,7 +233,7 @@ Assistant: [Proceeds with update]
 
 **Scenario 3: User provides no arguments**
 ```
-User: /rpiv-next:iterate-plan
+User: /skill:iterate-plan
 Assistant: Which plan would you like to update? Please provide the path...
 User: thoughts/shared/plans/2025-10-16_09-00-00_feature.md
 Assistant: I've found the plan. What changes would you like to make?

@@ -5,14 +5,12 @@ argument-hint: "[path/to/research-A.md] [path/to/research-B.md]"
 allowed-tools: Read, Bash(git *), Glob, Grep, Agent
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
-## Documents Under Evaluation
-$ARGUMENTS
-
 # Evaluate Research
+
+## Task
+
+If the user has not already provided a path (or two paths) to research document(s), ask them for the path(s) before proceeding. Their input will appear as a follow-up paragraph after this skill body.
+
 
 You are tasked with evaluating research documents by automatically verifying their claims against the actual codebase. You dispatch parallel agents to check whether file paths exist, code descriptions are accurate, integration points are real, and the research question is fully answered.
 
@@ -110,7 +108,7 @@ Were grounded questions asked that pulled new information?
 
 ### Step 1: Read and Parse Documents
 
-1. Parse `$ARGUMENTS` for one or two `.md` file paths
+1. Parse the user's input for one or two `.md` file paths
 2. Read each document FULLY (no limit/offset)
 3. Verify each has research document structure (YAML frontmatter with `topic:`, `tags:`, `status:`)
 4. Extract the research question from `## Research Question` section
@@ -150,7 +148,7 @@ Spawn agents in parallel. All at once, in a single message with multiple Agent t
 
 **For A/B mode (7 agents):**
 
-1. **verify-refs-A** (`rpiv-next:codebase-locator`):
+1. **verify-refs-A** (`codebase-locator`):
    ```
    Verify these file references exist in the codebase. For each:
    1. Check if the file path exists (use Glob)
@@ -161,9 +159,9 @@ Spawn agents in parallel. All at once, in a single message with multiple Agent t
    [paste Category A claims from Document A]
    ```
 
-2. **verify-refs-B** (`rpiv-next:codebase-locator`): Same prompt with Document B's Category A claims.
+2. **verify-refs-B** (`codebase-locator`): Same prompt with Document B's Category A claims.
 
-3. **verify-behavior-A** (`rpiv-next:codebase-analyzer`):
+3. **verify-behavior-A** (`codebase-analyzer`):
    ```
    For each claim below, read the referenced file and verify whether the description accurately describes what the code does. Report for each:
    - Verdict: CONFIRMED / INACCURATE / PARTIALLY_ACCURATE
@@ -173,9 +171,9 @@ Spawn agents in parallel. All at once, in a single message with multiple Agent t
    [paste top ~15 Category B claims from Document A]
    ```
 
-4. **verify-behavior-B** (`rpiv-next:codebase-analyzer`): Same prompt with Document B's Category B claims.
+4. **verify-behavior-B** (`codebase-analyzer`): Same prompt with Document B's Category B claims.
 
-5. **completeness-baseline** (`rpiv-next:codebase-locator`):
+5. **completeness-baseline** (`codebase-locator`):
    ```
    Search the codebase independently for ALL files relevant to this research question:
    "[paste research question]"
@@ -184,13 +182,13 @@ Spawn agents in parallel. All at once, in a single message with multiple Agent t
    Report all relevant files grouped by: implementation, configuration, tests, documentation, types/interfaces.
    ```
 
-6. **integration-baseline** (`rpiv-next:integration-scanner`):
+6. **integration-baseline** (`integration-scanner`):
    ```
    Map all connections for these components: [main components from research question]
    Report: Inbound references, Outbound dependencies, Infrastructure wiring.
    ```
 
-7. **verify-historical** (`rpiv-next:thoughts-locator`):
+7. **verify-historical** (`thoughts-locator`):
    ```
    Verify these document and commit references exist:
    [paste Category E claims from BOTH documents, deduplicated]
@@ -264,8 +262,8 @@ Write the report with this structure:
 date: [ISO datetime with timezone]
 reviewer: Claude Code
 repository: [repo name from git root]
-branch: [from Git Context]
-commit: [from Git Context]
+branch: [current git branch or "no-branch"]
+commit: [current git short hash or "no-commit"]
 review_type: research-evaluation
 document_a: "[path to Doc A]"
 document_b: "[path to Doc B]"  # omit in single mode

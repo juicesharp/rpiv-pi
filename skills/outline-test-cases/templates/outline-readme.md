@@ -22,12 +22,12 @@
 ## Next Steps
 Generate test cases for a specific feature:
 ```
-/rpiv-next:write-test-cases {feature-name}
+/skill:write-test-cases {feature-name}
 ```
 
 To update this outline after codebase changes:
 ```
-/rpiv-next:outline-test-cases
+/skill:outline-test-cases
 ```
 Incremental runs detect existing outlines and take faster paths.
 

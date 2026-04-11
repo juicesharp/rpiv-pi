@@ -4,12 +4,9 @@ description: Generate manual test case specifications for a single feature by an
 argument-hint: "[feature name, component path, feature slug, or _meta.md path] [additional instructions]"
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 ## Feature Under Test
-$ARGUMENTS
+
+If the user has not already provided a specific feature identifier (feature name, component path, feature slug, or _meta.md path), ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Write Test Cases
 
@@ -49,12 +46,12 @@ Parse the user's input to determine the feature under test. Handle these input f
 5. **No arguments provided**:
    ```
    I'll help you generate test cases. Please provide either:
-   1. A feature name: `/rpiv-next:write-test-cases Order Management`
-   2. A component path: `/rpiv-next:write-test-cases src/orders/`
-   3. A feature slug: `/rpiv-next:write-test-cases order-management`
-   4. A _meta.md path: `/rpiv-next:write-test-cases .rpiv/test-cases/orders/_meta.md`
+   1. A feature name: `/skill:write-test-cases Order Management`
+   2. A component path: `/skill:write-test-cases src/orders/`
+   3. A feature slug: `/skill:write-test-cases order-management`
+   4. A _meta.md path: `/skill:write-test-cases .rpiv/test-cases/orders/_meta.md`
 
-   Add instructions after the feature: `/rpiv-next:write-test-cases Order Management focus on refund edge cases`
+   Add instructions after the feature: `/skill:write-test-cases Order Management focus on refund edge cases`
    ```
    Then wait for input.
 
@@ -80,14 +77,14 @@ When no _meta.md, detect the project's technology stack before spawning agents: 
 Spawn the following agents in parallel using the Agent tool:
 
 **Agent A — Web Layer Discovery:**
-- subagent_type: `rpiv-next:codebase-locator`
+- subagent_type: `codebase-locator`
 - When _meta.md is available: "Validate these known Web Layer entry points for {feature name}: {routes and endpoints from _meta.md}. Check if they still exist and find any NEW entry points not in this list. Report: confirmed (still exists), removed (no longer found), new (not in the list)."
 - When no _meta.md: "Find all Web Layer entry points for the {feature name} feature{framework_hint}. Look for: controllers, route definitions, page components, form handlers, API endpoints. Search across all web layers (API, Admin, Customer Portal, Host, etc.). Also find frontend service files, HTTP clients, or API call sites that reference these endpoints — report which frontend pages call which backend URLs. For each entry point found, report: file path, HTTP method/route or page path, and a one-line description of what it does. Group by web layer."
 
 {framework_hint} is " in this {Framework} project" when a framework is detected (e.g., " in this Angular project"), or empty string if none detected. See Framework Detection Reference at end of document.
 
 **Agent B — Existing Test Cases:**
-- subagent_type: `rpiv-next:test-case-locator`
+- subagent_type: `test-case-locator`
 - Prompt: "Search for existing test cases related to {feature name} in .rpiv/test-cases/. Report any existing TCs with their IDs, titles, and priorities so we can avoid duplicates."
 
 Wait for both agents to complete before proceeding.
@@ -97,11 +94,11 @@ Wait for both agents to complete before proceeding.
 Using the entry points discovered in Step 2 (validated against _meta.md when available), spawn analysis agents in parallel. When _meta.md is available, enrich prompts: append scope exclusions from `## Scope Decisions` as {scope_context}, domain rules from `## Domain Context` as {domain_context}, and endpoint list as {endpoint_scope}. When no _meta.md, omit these.
 
 **Agent C — Code Analysis:**
-- subagent_type: `rpiv-next:codebase-analyzer`
+- subagent_type: `codebase-analyzer`
 - Prompt: "Analyze the {feature name} feature implementation in detail. Read the controllers/route handlers at {discovered paths}. For each endpoint/action, determine: 1) What user input is accepted (request body, query params, form fields)? 2) What validation rules exist — report specific limits (max lengths, regex patterns, required vs optional)? 3) What business logic is executed? 4) What are the success/error responses? 5) What authorization/permissions are required? Focus on understanding USER FLOWS — sequences of actions a user would perform to accomplish a goal. ALSO read the frontend page components and templates at {discovered frontend paths}. Extract what a QA tester would actually see: exact button labels, form field labels/placeholders, navigation items, table column headers, success/error messages, and conditional UI (role- or state-dependent elements). Resolve any i18n translation keys to displayed text. Report UI elements per page/route alongside the backend analysis.{scope_context}{domain_context}"
 
 **Agent D — Postcondition Discovery:**
-- subagent_type: `rpiv-next:integration-scanner`
+- subagent_type: `integration-scanner`
 - Prompt: "Find all side effects triggered by {feature name} actions{endpoint_scope}. Look for: domain events published, message handlers invoked, email/notification triggers, external API calls, database cascades, cache invalidations, audit log entries, webhook dispatches. For each side effect, report: what triggers it (which action/endpoint), what it does, and where the handler code lives. These become postconditions in test cases.{scope_context}"
 
 Wait for ALL agents to complete before proceeding.
@@ -181,23 +178,12 @@ When _meta.md is available: skip questions already answered in `## Checkpoint Hi
 
 **Choosing question format:**
 
-- **AskUserQuestion** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
-
-      AskUserQuestion:
-        questions:
-          - question: "Found 2 mapping approaches — which should new code follow?"
-            header: "Pattern"
-            multiSelect: false
-            options:
-              - label: "Manual mapping (Recommended)"
-                description: "Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences"
-              - label: "AutoMapper"
-                description: "Used in UserService (src/services/UserService.ts:12) — 2 occurrences"
+- **`ask_user_question` tool** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example: Use the `ask_user_question` tool with the question "Found 2 mapping approaches — which should new code follow?". Options: "Manual mapping (Recommended)" (Used in OrderService (src/services/OrderService.ts:45) — 8 occurrences); "AutoMapper" (Used in UserService (src/services/UserService.ts:12) — 2 occurrences).
 
 - **Free-text with ❓ Question: prefix** — when the question is open-ended and options can't be predicted (discovery, "what am I missing?", corrections). Example:
   "❓ Question: Integration scanner found no background job registration for this area. Is that expected, or is there async processing I'm not seeing?"
 
-**Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single AskUserQuestion call. Keep dependent questions sequential.
+**Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
 **Classify each response:**
 
@@ -205,7 +191,7 @@ When _meta.md is available: skip questions already answered in `## Checkpoint Hi
 - Update flow list. Record in notes.
 
 **Missing flows** (e.g., "you missed the bulk export feature"):
-- Spawn targeted **rpiv-next:codebase-analyzer** (max 1 agent) to analyze the missing area.
+- Spawn targeted **codebase-analyzer** (max 1 agent) to analyze the missing area.
 - Add the flow to the list.
 
 **Scope adjustments** (e.g., "skip admin flows, focus on customer portal"):
@@ -217,10 +203,10 @@ When _meta.md is available: skip questions already answered in `## Checkpoint Hi
 ### Step 6: Generate Test Case Documents
 
 Read the templates before writing:
-- Read the full test case template at `${CLAUDE_SKILL_DIR}/templates/test-case.md`
-- Read the full regression suite template at `${CLAUDE_SKILL_DIR}/templates/regression-suite.md`
+- Read the full test case template at `templates/test-case.md`
+- Read the full regression suite template at `templates/regression-suite.md`
 
-See `${CLAUDE_SKILL_DIR}/examples/order-placement-flow.md` (e-commerce order flow), `${CLAUDE_SKILL_DIR}/examples/customer-auth-flow.md` (authentication flow), and `${CLAUDE_SKILL_DIR}/examples/team-management-flow.md` (SaaS team management flow) for well-formed test case examples.
+See `examples/order-placement-flow.md` (e-commerce order flow), `examples/customer-auth-flow.md` (authentication flow), and `examples/team-management-flow.md` (SaaS team management flow) for well-formed test case examples.
 
 What makes these examples good:
 - **Steps are user-centric** — "Navigate to...", "Click...", "Enter..." — not technical ("POST to /api/orders")
@@ -229,7 +215,7 @@ What makes these examples good:
 - **Edge cases are separate bullets** — not crammed into steps
 - **Preconditions are specific** — exact user role, required test data, system state
 
-See `${CLAUDE_SKILL_DIR}/examples/order-management-suite.md` and `${CLAUDE_SKILL_DIR}/examples/team-management-suite.md` for well-formed regression suite examples.
+See `examples/order-management-suite.md` and `examples/team-management-suite.md` for well-formed regression suite examples.
 
 What makes these examples good:
 - **Smoke subset is minimal** — 2-4 high-priority TCs covering critical paths
@@ -274,7 +260,7 @@ What makes these examples good:
    - Append new checkpoint Q&A pairs to `## Checkpoint History` under a new date header — only if new Q&A occurred during Step 5
 
 4. **Rebuild root coverage map** at `.rpiv/test-cases/_coverage-map.md`:
-   - Read the coverage map template at `${CLAUDE_SKILL_DIR}/templates/coverage-map.md`
+   - Read the coverage map template at `templates/coverage-map.md`
    - Glob for all `_regression-suite.md` files across `.rpiv/test-cases/*/`
    - Glob for all `_meta.md` files across `.rpiv/test-cases/*/`
    - Read each file's key data (frontmatter, summary stats, coverage map, smoke subset)

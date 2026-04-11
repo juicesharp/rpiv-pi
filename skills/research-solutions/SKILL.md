@@ -4,10 +4,6 @@ description: Analyze solution options for features or changes. Compares approach
 argument-hint: [feature/change description]
 ---
 
-## Git Context
-- Branch: !`git branch --show-current 2>/dev/null || echo "no-branch (not a git repo)"`
-- Commit: !`git rev-parse --short HEAD 2>/dev/null || echo "no-commit (not a git repo)"`
-
 # Research Solutions
 
 You are tasked with analyzing solution options for new features or changes by invoking parallel skills and synthesizing their findings into actionable recommendations optimized for create-plan consumption.
@@ -39,14 +35,13 @@ Then wait for the user's request.
    - **ALWAYS spawn fresh research** - Never rely on old research docs as truth
    - Old research can be read as historical context but validate against current code
    - Think deeply about requirements, constraints, and integration points
-   - Create a task list using TaskCreate to track research tasks
 
    **Spawn parallel research agents using the Agent tool:**
-   - Use the **rpiv-next:codebase-locator** agent to find relevant components
-   - Use the **rpiv-next:codebase-analyzer** agent to understand current implementation
-   - Use the **rpiv-next:codebase-pattern-finder** agent to find similar patterns
-   - Use the **rpiv-next:thoughts-locator** agent to find historical context in thoughts/
-   - Optional: Use the **rpiv-next:web-search-researcher** agent for web research only if user requests
+   - Use the **codebase-locator** agent to find relevant components
+   - Use the **codebase-analyzer** agent to understand current implementation
+   - Use the **codebase-pattern-finder** agent to find similar patterns
+   - Use the **thoughts-locator** agent to find historical context in thoughts/
+   - Optional: Use the **web-search-researcher** agent for web research only if user requests
 
 3. **Generate and compare solution options:**
    - Wait for ALL agents to complete
@@ -71,7 +66,7 @@ Then wait for the user's request.
      - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
      - [topic]: Brief kebab-case description
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the "Git Context" section above
+   - Determine branch and commit by running `git branch --show-current` and `git rev-parse --short HEAD`
    - Researcher: Use "Claude Code"
    - If metadata unavailable: use "unknown" for commit/branch
 
