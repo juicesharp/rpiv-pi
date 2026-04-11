@@ -4,7 +4,8 @@
  * Registration function: call registerAskUserQuestionTool(pi) from index.ts.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { type ExtensionAPI, DynamicBorder } from "@mariozechner/pi-coding-agent";
+import { Container, SelectList, Spacer, Text, type SelectItem } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
@@ -56,7 +57,37 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			// Add "Other (type something)" option
 			const allItems = [...items, "Other (type your own answer)"];
 
-			const choice = await ctx.ui.select(`${headerPrefix}${params.question}`, allItems);
+			const choice = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
+				const container = new Container();
+
+				container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+				container.addChild(new Spacer(1));
+				container.addChild(new Text(theme.fg("accent", theme.bold(`${headerPrefix}${params.question}`)), 1, 0));
+				container.addChild(new Spacer(1));
+
+				const selectItems: SelectItem[] = allItems.map((item) => ({ value: item, label: item }));
+				const selectList = new SelectList(selectItems, Math.min(allItems.length, 10), {
+					selectedPrefix: (t) => theme.bg("selectedBg", theme.fg("accent", t)),
+					selectedText: (t) => theme.bg("selectedBg", theme.bold(t)),
+					description: (t) => theme.fg("muted", t),
+					scrollInfo: (t) => theme.fg("dim", t),
+					noMatch: (t) => theme.fg("warning", t),
+				});
+				selectList.onSelect = (item) => done(item.value);
+				selectList.onCancel = () => done(null);
+				container.addChild(selectList);
+
+				container.addChild(new Spacer(1));
+				container.addChild(new Text(theme.fg("dim", "↑↓ navigate • enter select • esc cancel"), 1, 0));
+				container.addChild(new Spacer(1));
+				container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)));
+
+				return {
+					render: (w) => container.render(w),
+					invalidate: () => container.invalidate(),
+					handleInput: (data) => { selectList.handleInput(data); tui.requestRender(); },
+				};
+			});
 
 			if (!choice) {
 				return {
