@@ -23,6 +23,7 @@ import { hasPiSubagentsInstalled, hasPiPermissionSystemInstalled } from "./packa
 import { registerAskUserQuestionTool } from "./ask-user-question.js";
 import { registerTodoTool, registerTodosCommand, reconstructTodoState } from "./todo.js";
 import { TodoOverlay } from "./todo-overlay.js";
+import { registerAdvisorTool, registerAdvisorCommand } from "./advisor.js";
 
 export default function (pi: ExtensionAPI) {
 	// Todo overlay widget — constructed lazily at the first session_start with UI.
@@ -32,6 +33,8 @@ export default function (pi: ExtensionAPI) {
 	registerAskUserQuestionTool(pi);
 	registerTodoTool(pi);
 	registerTodosCommand(pi);
+	registerAdvisorTool(pi);
+	registerAdvisorCommand(pi);
 
 	// ── Session Start ──────────────────────────────────────────────────────
 	pi.on("session_start", async (_event, ctx) => {
