@@ -1,95 +1,109 @@
-# rpiv-pi — Pi Package
+# rpiv-pi
 
-A skill-based development workflow plugin for [Pi](https://github.com/badlogic/pi). Ports the rpiv-skillbased Claude Code plugin to Pi's extension and skill system.
+Skill-based development workflow for Pi — research, design, plan, implement, review.
 
-## What's Included
+Version: 0.2.0
 
-### 🤖 Agents (9)
-Specialized subagents for codebase research and analysis:
-- `codebase-analyzer` — Analyzes HOW code works with file:line references
-- `codebase-locator` — Finds WHERE files and components live
-- `codebase-pattern-finder` — Finds examples of similar implementations
-- `integration-scanner` — Discovers inbound/outbound dependencies
-- `precedent-locator` — Finds what went wrong in similar past changes
-- `test-case-locator` — Locates existing test cases
-- `thoughts-analyzer` — Extracts insights from thoughts/ documents
-- `thoughts-locator` — Discovers thoughts/ documents by topic
-- `web-search-researcher` — Researches external documentation and resources
+## Requirements
 
-### 🧰 Skills (21)
-Structured workflows invoked via `/skill:name`:
-- **Research:** `research-codebase`, `research-questions`, `research`, `research-solutions`, `evaluate-research`
-- **Design:** `design-feature`, `design-feature-iterative`
-- **Planning:** `create-plan`, `write-plan`, `iterate-plan`, `validate-plan`
-- **Implementation:** `implement-plan`
-- **Testing:** `outline-test-cases`, `write-test-cases`
-- **Review:** `code-review`
-- **Git:** `commit`
-- **Handoff:** `create-handoff`, `resume-handoff`
-- **Annotations:** `annotate-guidance`, `annotate-inline`, `migrate-to-guidance`
+Peer dependencies (expected to be installed in the Pi environment):
 
-### 🔌 Extension
-A core extension providing:
-- **`ask_user_question` tool** — Structured questions with selectable options (replaces Claude Code's `AskUserQuestion`)
-- **`todo` tool** — Task tracking with add/toggle/list/clear (replaces Claude Code's `TaskCreate`/`TaskUpdate`)
-- **Guidance injection** — Auto-injects `.rpiv/guidance/*/architecture.md` context when reading/editing files
-- **Git context injection** — Injects branch/commit info before each agent turn
-- **`thoughts/` directory scaffolding** — Creates the artifact chain directories on session start
-- **Session lifecycle management** — Cleans up state on compact/shutdown
+- `@mariozechner/pi-coding-agent` — the Pi CLI runtime
+- `@mariozechner/pi-ai`
+- `@mariozechner/pi-tui`
+- `@sinclair/typebox`
+
+Direct dependency, declared in `package.json`:
+
+- `@tintinweb/pi-subagents ^0.5.2` — provides the `Agent` tool and the `/agents` command. Without it, every rpiv-pi skill that dispatches a named subagent silently falls back to `general-purpose`.
+
+Recommended, separate install:
+
+- `pi-permission-system` — enforces the permission rules in `~/.pi/agent/pi-permissions.jsonc`. rpiv-pi seeds this file with sensible defaults on first session start but does not enforce them itself.
 
 ## Installation
 
 ```bash
-# 1. Install rpiv-pi itself
-pi install ./path/to/rpiv-pi
-
-# 2. Start a Pi session and run the setup command
-/rpiv-setup
-#   Confirms, then installs the sibling Pi packages rpiv-pi depends on:
-#     • @tintinweb/pi-subagents      (required — Agent tool + /agents command)
-#     • pi-permission-system         (recommended — rules enforcement)
-
-# 3. Restart your session so the new extensions load
+pi install /Users/sguslystyi/rpiv-pi
 ```
 
-`/rpiv-setup` is idempotent — running it when everything is already installed
-prints a one-line "already installed" message. If `@tintinweb/pi-subagents`
-is missing on session start, rpiv-core emits a warning telling you to run
-`/rpiv-setup`. Without that package, the `Agent` / `get_subagent_result` /
-`steer_subagent` tools and the `/agents` command are not registered at all
-(Pi core ships no built-in subagent system), and every rpiv-pi skill that
-dispatches a named agent will fail with an unknown-tool error.
-
-### Manual install (no interactive session)
-
-If you prefer to skip `/rpiv-setup`:
-
 ```bash
-pi install npm:@tintinweb/pi-subagents
 pi install npm:pi-permission-system
-pi install ./path/to/rpiv-pi
 ```
 
-## Usage
+From inside a Pi session (one-time, sets the Brave Search API key used by `web_search`):
 
-```bash
-# Invoke a skill
-/skill:research-codebase How does the auth pipeline work?
-/skill:design-feature Add SSO support
-/skill:implement-plan thoughts/shared/plans/2026-04-10_sso.md
-
-# Agents are available to the subagent tool
-# (requires the subagent extension)
+```
+/web-search-config
 ```
 
-## Migration Status
+On first session start in any project, rpiv-pi auto-copies 9 agent files to `<cwd>/.pi/agents/` and seeds `~/.pi/agent/pi-permissions.jsonc` if missing.
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Extension skeleton | ✅ Ready | Core hooks, tools, session lifecycle |
-| Agent `.md` files | ✅ Ready | Frontmatter updated for Pi |
-| Skill SKILL.md files | 🔄 Placeholder | Need `$ARGUMENTS`/`AskUserQuestion`/`Glob` replacements |
-| Skill templates/examples | 📋 To copy | Copy from source after skills are migrated |
-| Web tools (web_search/web_fetch) | 📋 Stub | Needs HTTP API integration |
+## What's included
 
-See the [migration guide](thoughts/MIGRATION.md) for details.
+### Extensions (2)
+
+| Extension | Tools | Commands | Session hooks |
+|-----------|-------|----------|---------------|
+| `rpiv-core` | `ask_user_question`, `todo` | `/todos`, `/rpiv-update-agents`, `/rpiv-setup` | `session_start`, `session_tree`, `session_compact`, `session_shutdown`, `tool_call`, `before_agent_start` |
+| `web-tools` | `web_search`, `web_fetch` | `/web-search-config` | — |
+
+### Skills (21)
+
+Invoke via `/skill:<name>` from inside a Pi session.
+
+| Skill | Description |
+|---|---|
+| `annotate-guidance` | Generate architecture.md guidance files in `.rpiv/guidance/` by analyzing architecture and patterns in parallel. |
+| `annotate-inline` | Generate CLAUDE.md files across a project by analyzing architecture and patterns in parallel. |
+| `code-review` | Conduct comprehensive code reviews by analyzing changes in parallel. |
+| `commit` | Create structured git commits grouped by logical change. |
+| `create-handoff` | Create context-preserving handoff documents for session transitions. |
+| `create-plan` | Create detailed implementation plans through interactive collaboration. |
+| `design-feature` | Design how code will be shaped through interactive architectural collaboration. |
+| `design-feature-iterative` | Design features through iterative vertical-slice decomposition with developer micro-checkpoints. |
+| `evaluate-research` | A/B test two research documents by verifying claims against the actual codebase. |
+| `implement-plan` | Execute approved implementation plans phase by phase. |
+| `iterate-plan` | Update existing implementation plans based on feedback. |
+| `migrate-to-guidance` | Migrate existing CLAUDE.md files to the `.rpiv/guidance/` system. |
+| `outline-test-cases` | Discover testable features and create a folder outline under `.rpiv/test-cases/` with per-feature metadata. |
+| `research` | Answer structured research questions via targeted parallel analysis agents. |
+| `research-codebase` | Conduct comprehensive codebase research by spawning parallel skills with integration scanning. |
+| `research-questions` | Generate trace-quality research questions from codebase discovery. |
+| `research-solutions` | Analyze solution options for features or changes with pros/cons. |
+| `resume-handoff` | Resume work from a handoff document. |
+| `validate-plan` | Verify that an implementation plan was correctly executed. |
+| `write-plan` | Create phased implementation plans from design artifacts. |
+| `write-test-cases` | Generate manual test case specifications for a single feature by analyzing code in parallel. |
+
+### Agents (9)
+
+Dispatched via the `Agent` tool (provided by `@tintinweb/pi-subagents`) with `subagent_type: "<name>"`.
+
+| Agent | Purpose |
+|---|---|
+| `codebase-analyzer` | Analyzes codebase implementation details for specific components. |
+| `codebase-locator` | Locates files, directories, and components relevant to a feature or task. |
+| `codebase-pattern-finder` | Finds similar implementations, usage examples, and existing patterns with concrete code. |
+| `integration-scanner` | Finds inbound references, outbound dependencies, config registrations, and event subscriptions. |
+| `precedent-locator` | Finds similar past changes in git history — commits, blast radius, follow-up fixes. |
+| `test-case-locator` | Finds existing manual test cases in `.rpiv/test-cases/` and reports coverage stats. |
+| `thoughts-analyzer` | Deep-dive analysis on research topics in `thoughts/`. |
+| `thoughts-locator` | Discovers relevant documents in the `thoughts/` directory by topic. |
+| `web-search-researcher` | Researches web-based information and modern documentation via `web_search` / `web_fetch`. |
+
+## Typical workflow
+
+```
+/skill:research-questions "how does X work"
+/skill:research thoughts/shared/questions/<latest>.md
+/skill:design-feature-iterative thoughts/shared/research/<latest>.md
+/skill:write-plan thoughts/shared/designs/<latest>.md
+/skill:implement-plan thoughts/shared/plans/<latest>.md Phase <N>
+```
+
+## Notes
+
+- Agent files live at `<cwd>/.pi/agents/` and are editable; `/rpiv-update-agents` refreshes them from the bundled defaults.
+- Artifacts written by skills land under `thoughts/shared/{research,questions,designs,plans,handoffs,reviews,solutions}/` in the current project.
+- `@tintinweb/pi-subagents` defaults to 4 concurrent background agents per session; raise it per-session via `/agents → Settings → Max concurrency → 48` if skills stall on wide fan-outs.

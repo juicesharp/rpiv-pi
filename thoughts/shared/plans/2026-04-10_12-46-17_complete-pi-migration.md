@@ -1360,15 +1360,15 @@ Execution: Read full file → apply transforms → grep-verify.
 ### Success Criteria:
 
 #### Automated Verification (run against all 6 files):
-- [ ] No `!\`git` shell-eval patterns remain in any Phase 5 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
-- [ ] No `$ARGUMENTS` references remain: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
-- [ ] No `^AskUserQuestion:` YAML block headers remain: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
-- [ ] No `TaskCreate`/`TaskUpdate` prose references remain: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
-- [ ] No `rpiv-next:` prefixes remain: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
-- [ ] No `${CLAUDE_PLUGIN_ROOT}` or `${CLAUDE_SKILL_DIR}` remain: `grep -lE '\$\{CLAUDE_(PLUGIN_ROOT|SKILL_DIR)\}' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
-- [ ] `validate-plan` STILL references `general-purpose` (NOT accidentally rewritten): `grep -c 'general-purpose' /Users/sguslystyi/rpiv-pi/skills/validate-plan/SKILL.md` outputs a non-zero integer
-- [ ] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
-- [ ] (if precondition succeeded) `test -f /Users/sguslystyi/rpiv-pi/scripts/migrate.js`
+- [x] No `!\`git` shell-eval patterns remain in any Phase 5 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
+- [x] No `$ARGUMENTS` references remain: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
+- [x] No `^AskUserQuestion:` YAML block headers remain: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
+- [x] No `TaskCreate`/`TaskUpdate` prose references remain: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
+- [x] No `rpiv-next:` prefixes remain: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
+- [x] No `${CLAUDE_PLUGIN_ROOT}` or `${CLAUDE_SKILL_DIR}` remain: `grep -lE '\$\{CLAUDE_(PLUGIN_ROOT|SKILL_DIR)\}' /Users/sguslystyi/rpiv-pi/skills/{migrate-to-guidance,implement-plan,create-handoff,validate-plan,resume-handoff,write-plan}/SKILL.md` outputs nothing
+- [x] `validate-plan` STILL references `general-purpose` (NOT accidentally rewritten): `grep -c 'general-purpose' /Users/sguslystyi/rpiv-pi/skills/validate-plan/SKILL.md` outputs 3
+- [x] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
+- [x] (precondition succeeded) `test -f /Users/sguslystyi/rpiv-pi/scripts/migrate.js` (plus the full scripts/ directory was copied from rpiv-skillbased — handlers/, lib/, types.js, migrate.js)
 
 #### Manual Verification:
 - [ ] `/skill:implement-plan thoughts/shared/plans/<test>.md` runs end-to-end — prompts for plan path if omitted, raises `ask_user_question` on mismatches
@@ -1446,12 +1446,12 @@ Execution: Read full file → apply Phase 5 transforms → grep-verify. Note: no
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] No `!\`git` in any Phase 6 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
-- [ ] No `$ARGUMENTS`: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
-- [ ] No `^AskUserQuestion:` blocks: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
-- [ ] No `TaskCreate`/`TaskUpdate`: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
-- [ ] No `rpiv-next:` prefixes: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
-- [ ] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
+- [x] No `!\`git` in any Phase 6 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
+- [x] No `$ARGUMENTS`: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
+- [x] No `^AskUserQuestion:` blocks: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
+- [x] No `TaskCreate`/`TaskUpdate`: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
+- [x] No `rpiv-next:` prefixes: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{research,research-questions,research-codebase,research-solutions}/SKILL.md` outputs nothing
+- [x] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
 
 #### Manual Verification:
 - [ ] `/skill:research-codebase` spawns subagents that IDENTIFY THEMSELVES as `codebase-locator` / `codebase-analyzer` / etc. in their responses (not as `general-purpose`)
@@ -1552,13 +1552,13 @@ Execution: Read full file → handle line 458 special case first → apply remai
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] No `!\`git` in any Phase 7 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
-- [ ] No `$ARGUMENTS`: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
-- [ ] No `^AskUserQuestion:` blocks: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
-- [ ] No `TaskCreate`/`TaskUpdate`: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
-- [ ] No `rpiv-next:` prefixes: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
-- [ ] Special case: `create-plan/SKILL.md` line ~458 no longer has ANY `rpiv-next:` tokens: `grep -c 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/create-plan/SKILL.md` outputs `0`
-- [ ] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
+- [x] No `!\`git` in any Phase 7 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
+- [x] No `$ARGUMENTS`: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
+- [x] No `^AskUserQuestion:` blocks: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
+- [x] No `TaskCreate`/`TaskUpdate`: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
+- [x] No `rpiv-next:` prefixes: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{iterate-plan,evaluate-research,code-review,design-feature,design-feature-iterative,create-plan}/SKILL.md` outputs nothing
+- [x] Special case: `create-plan/SKILL.md` line ~458 no longer has ANY `rpiv-next:` tokens: `grep -c 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/create-plan/SKILL.md` outputs `0`
+- [x] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
 
 #### Manual Verification:
 - [ ] `/skill:design-feature thoughts/shared/research/<latest>.md` runs end-to-end, spawning custom subagents correctly, producing a design doc at `thoughts/shared/designs/<date>_<topic>.md`
@@ -1648,15 +1648,15 @@ Execution: Read full file → apply Phase 5 transforms → replace all 8 `${CLAU
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] No `!\`git` in any Phase 8 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
-- [ ] No `$ARGUMENTS`: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
-- [ ] No `^AskUserQuestion:` blocks: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
-- [ ] No `TaskCreate`/`TaskUpdate`: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
-- [ ] No `rpiv-next:` prefixes: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
-- [ ] No `${CLAUDE_SKILL_DIR}` references remain: `grep -l '\${CLAUDE_SKILL_DIR}' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
-- [ ] All referenced template files exist: `find /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/templates -name '*.md'` lists every template file mentioned in the skill bodies (no orphan references)
-- [ ] Final full-repo check: no Phase-5-through-8 patterns remain anywhere: `grep -rlE '(rpiv-next:|\$ARGUMENTS|!\`git|^AskUserQuestion:|TaskCreate|TaskUpdate|\${CLAUDE_(PLUGIN_ROOT|SKILL_DIR)\})' /Users/sguslystyi/rpiv-pi/skills/` outputs nothing
-- [ ] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
+- [x] No `!\`git` in any Phase 8 skill: `grep -l '!\`git' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
+- [x] No `$ARGUMENTS`: `grep -l '\$ARGUMENTS' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
+- [x] No `^AskUserQuestion:` blocks: `grep -l '^AskUserQuestion:' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
+- [x] No `TaskCreate`/`TaskUpdate`: `grep -lE '(TaskCreate|TaskUpdate)' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
+- [x] No `rpiv-next:` prefixes: `grep -l 'rpiv-next:' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
+- [x] No `${CLAUDE_SKILL_DIR}` references remain: `grep -l '\${CLAUDE_SKILL_DIR}' /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/SKILL.md` outputs nothing
+- [x] All referenced template files exist: `find /Users/sguslystyi/rpiv-pi/skills/{annotate-guidance,annotate-inline,outline-test-cases,write-test-cases}/templates -name '*.md'` lists every template file mentioned in the skill bodies (no orphan references)
+- [x] Final full-repo check: no Phase-5-through-8 patterns remain anywhere: `grep -rlE '(rpiv-next:|\$ARGUMENTS|!\`git|^AskUserQuestion:|TaskCreate|TaskUpdate|\${CLAUDE_(PLUGIN_ROOT|SKILL_DIR)\})' /Users/sguslystyi/rpiv-pi/skills/` outputs nothing
+- [x] `pi install /Users/sguslystyi/rpiv-pi` completes with exit code 0
 
 #### Manual Verification:
 - [ ] `/skill:annotate-guidance` scaffolds `.rpiv/guidance/**/architecture.md` files using bundled templates; template paths resolve correctly
