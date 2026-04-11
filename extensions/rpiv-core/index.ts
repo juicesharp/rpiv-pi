@@ -22,8 +22,12 @@ import { seedPermissionsFile } from "./permissions.js";
 import { hasPiSubagentsInstalled, hasPiPermissionSystemInstalled } from "./package-checks.js";
 import { registerAskUserQuestionTool } from "./ask-user-question.js";
 import { registerTodoTool, registerTodosCommand, reconstructTodoState } from "./todo.js";
+import { TodoOverlay } from "./todo-overlay.js";
 
 export default function (pi: ExtensionAPI) {
+	// Todo overlay widget — constructed lazily at the first session_start with UI.
+	let todoOverlay: TodoOverlay | undefined;
+
 	// ── Register Tools & Commands ──────────────────────────────────────────
 	registerAskUserQuestionTool(pi);
 	registerTodoTool(pi);
@@ -33,6 +37,14 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		clearInjectionState();
 		reconstructTodoState(ctx);
+
+		// Construct/rebind the todo overlay when UI is available. setUICtx is
+		// idempotent on identity match and re-registers on rebind (/reload).
+		if (ctx.hasUI) {
+			todoOverlay ??= new TodoOverlay();
+			todoOverlay.setUICtx(ctx.ui);
+			todoOverlay.update();
+		}
 
 		// Seed a root `active_agent` session entry so pi-permission-system's
 		// input handler can resolve the root context on the very first user
@@ -85,18 +97,31 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// ── Session Compact ────────────────────────────────────────────────────
-	pi.on("session_compact", async (_event, _ctx) => {
+	pi.on("session_compact", async (_event, ctx) => {
 		clearInjectionState();
+		reconstructTodoState(ctx);
+		todoOverlay?.update();
 	});
 
 	// ── Session Shutdown ───────────────────────────────────────────────────
 	pi.on("session_shutdown", async (_event, _ctx) => {
 		clearInjectionState();
+		todoOverlay?.dispose();
+		todoOverlay = undefined;
 	});
 
 	// ── Session Tree (reconstruct todo state) ──────────────────────────────
 	pi.on("session_tree", async (_event, ctx) => {
 		reconstructTodoState(ctx);
+		todoOverlay?.update();
+	});
+
+	// ── Tool Execution End — refresh todo overlay on todo mutations ───────
+	pi.on("tool_execution_end", async (event, _ctx) => {
+		if (event.toolName !== "todo" || event.isError) return;
+		// Reads getTodos() at render time; do NOT call reconstructTodoState
+		// here (branch is stale — message_end runs after tool_execution_end).
+		todoOverlay?.update();
 	});
 
 	// ── Guidance Injection ─────────────────────────────────────────────────

@@ -1,16 +1,72 @@
+---
+date: 2026-04-11T03:30:37+0000
+planner: Claude Code
+git_commit: d484cb3
+branch: master
+repository: rpiv-pi
+topic: "Upgrade rpiv-core `todo` tool to Claude Code TaskCreate/TaskUpdate/TaskList/TaskGet parity"
+tags: [plan, todo-tool, rpiv-core, pi-extensions, claude-code-parity, state-machine, reducer-pattern]
+status: ready
+design_source: "thoughts/shared/designs/2026-04-10_22-34-39_todo-tool-cc-parity.md"
+last_updated: 2026-04-11
+last_updated_by: Claude Code
+---
+
+# Todo Tool CC-Parity Upgrade Implementation Plan
+
+## Overview
+
+Full rewrite of `extensions/rpiv-core/todo.ts` from a legacy 3-field `{id, text, done}` + 4-action switch (`list/add/toggle/clear`) to a full Claude-Code-parity `Task` record + 6-verb action set (`create/update/list/get/delete/clear`) backed by a pure `applyTaskMutation` reducer. The tool name stays `todo` to preserve the permissions entry at `templates/pi-permissions.jsonc:26`. Single-file rewrite — no other files touched; `index.ts` import signature is preserved.
+
+Reference: design artifact at `thoughts/shared/designs/2026-04-10_22-34-39_todo-tool-cc-parity.md`.
+
+## Desired End State
+
+- LLM creates tasks with `todo({ action: "create", subject: "..." })` — returns `Task` objects with full 4-state status machine
+- Tasks transition: `pending → in_progress → completed`, plus `deleted` tombstone
+- `blockedBy` dependency tracking with cycle detection and deleted-reference rejection
+- `activeForm` spinner labels persisted on tasks
+- Per-action `renderCall`/`renderResult` with collapsed and expanded views
+- Enhanced `/todos` slash command with status-grouped output
+- State survives compaction + branch navigation via snapshot-based replay
+- No changes to permissions file, skill files, or `index.ts`
+
+## What We're NOT Doing
+
+- **Four-tool split** (`TaskCreate`/`TaskUpdate`/`TaskList`/`TaskGet`) — single tool preserves permissions entry
+- **Overlay component for `/todos`** — `ctx.ui.notify` toast enhanced instead
+- **Legacy `{id, text, done}` shim** — rpiv-pi is pre-production
+- **`activeForm` spinner animation** — static label only
+- **`createdAt`/`updatedAt` timestamps** — deferred
+- **String task IDs** — keep numeric
+- **`index.ts` stale doc comment cleanup** — cosmetic
+- **`README.md` tool-list entry update** — cosmetic
+
+## Phase 1: Full Todo Tool Rewrite
+
+### Overview
+Replace the entire `extensions/rpiv-core/todo.ts` file with the CC-parity implementation. The new file contains: types (`Task`, `TaskDetails`, `TaskStatus`, `TaskAction`), state machine (`VALID_TRANSITIONS`), pure helpers (`isTransitionValid`, `detectCycle`, `deriveBlocks`), pure reducer (`applyTaskMutation`), snapshot-based replay (`reconstructTodoState` with type-guard), rendering helpers (`statusGlyph`), tool registration (`registerTodoTool` with `renderCall`/`renderResult`), and enhanced `/todos` command (`registerTodosCommand`).
+
+### Changes Required:
+
+#### 1. Full rewrite of todo module
+**File**: `extensions/rpiv-core/todo.ts`
+**Changes**: Replace entire file (161 lines → ~530 lines). Three exports consumed by `index.ts` are preserved: `registerTodoTool`, `registerTodosCommand`, `reconstructTodoState`. `getTodos()` remains exported for the `/todos` command.
+
+```typescript
 /**
  * todo tool + /todos command — Claude-Code-parity Task management.
  *
  * State lives in this module and persists via the tool's AgentToolResult.details
- * envelope. reconstructTodoState walks ctx.sessionManager.getBranch() and restores
- * the last snapshot; the pure applyTaskMutation reducer is the single source of
- * truth for invariants — state machine transitions, blockedBy cycle checks,
- * dangling-reference rejection. Tool name is deliberately "todo" (not
- * TaskCreate/etc.) to preserve the permissions entry at
- * templates/pi-permissions.jsonc:26.
+ * envelope. reconstructTodoState (Slice 3) walks ctx.sessionManager.getBranch()
+ * and restores the last snapshot; the pure applyTaskMutation reducer (Slice 2)
+ * is the single source of truth for invariants — state machine transitions,
+ * blockedBy cycle checks, dangling-reference rejection. Tool name is
+ * deliberately "todo" (not TaskCreate/etc.) to preserve the permissions entry
+ * at templates/pi-permissions.jsonc:26.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, Theme } from "@mariozechner/pi-coding-agent";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Text } from "@mariozechner/pi-tui";
 import { Type } from "@sinclair/typebox";
@@ -46,6 +102,11 @@ export interface TaskDetails {
 // State machine
 // ---------------------------------------------------------------------------
 
+/**
+ * Legal status transitions. `deleted` is a universal tombstone reachable from
+ * every non-terminal state. `completed` and `deleted` are terminal; any
+ * transition out of them (other than to `deleted`) is rejected by the reducer.
+ */
 const VALID_TRANSITIONS: Record<TaskStatus, ReadonlySet<TaskStatus>> = {
 	pending: new Set(["in_progress", "completed", "deleted"]),
 	in_progress: new Set(["pending", "completed", "deleted"]),
@@ -60,6 +121,7 @@ const VALID_TRANSITIONS: Record<TaskStatus, ReadonlySet<TaskStatus>> = {
 let tasks: Task[] = [];
 let nextId = 1;
 
+/** Internal accessor used by the /todos command. */
 export function getTodos(): readonly Task[] {
 	return tasks;
 }
@@ -73,6 +135,11 @@ export function isTransitionValid(from: TaskStatus, to: TaskStatus): boolean {
 	return VALID_TRANSITIONS[from].has(to);
 }
 
+/**
+ * Detects a cycle in the blockedBy graph that would be introduced by merging
+ * `newBlockedBy` into task `taskId`'s existing edges. Pure — does not mutate.
+ * Linear DFS over the full task list; acceptable for realistic list sizes.
+ */
 export function detectCycle(
 	taskList: readonly Task[],
 	taskId: number,
@@ -108,6 +175,11 @@ export function detectCycle(
 	return false;
 }
 
+/**
+ * Inverse of blockedBy: for each task id, the list of task ids that are
+ * currently blocked by it. Computed on read in list/get renderers; never
+ * accepted as a write parameter.
+ */
 export function deriveBlocks(taskList: readonly Task[]): Map<number, number[]> {
 	const blocks = new Map<number, number[]>();
 	for (const t of taskList) {
@@ -135,6 +207,11 @@ interface ReducerResult {
 	content: Array<{ type: "text"; text: string }>;
 }
 
+/**
+ * Parameter surface — mirrors the TypeBox schema registered in Slice 3.
+ * Index signature keeps the upcast into `details.params` (Record<string, unknown>)
+ * a clean widening with no `as unknown as` hack.
+ */
 interface TaskMutationParams {
 	[key: string]: unknown;
 	subject?: string;
@@ -169,6 +246,12 @@ function errorResult(
 	};
 }
 
+/**
+ * The load-bearing abstraction. Accepts the current state + an action verb +
+ * its parameters, returns the new state and the tool result. Pure: no module
+ * state touched, no I/O. Called from execute (Slice 3); replay uses a simpler
+ * snapshot copy, so the reducer's invariants are enforced once at write time.
+ */
 export function applyTaskMutation(
 	state: ReducerState,
 	action: TaskAction,
@@ -260,6 +343,7 @@ export function applyTaskMutation(
 				);
 			}
 
+			// Status transition check
 			let newStatus = current.status;
 			if (params.status !== undefined) {
 				if (!isTransitionValid(current.status, params.status)) {
@@ -273,6 +357,7 @@ export function applyTaskMutation(
 				newStatus = params.status;
 			}
 
+			// blockedBy additive merge — remove first, then add (CC semantics)
 			let newBlockedBy = current.blockedBy ? [...current.blockedBy] : [];
 			if (params.removeBlockedBy && params.removeBlockedBy.length) {
 				const toRemove = new Set(params.removeBlockedBy);
@@ -317,6 +402,7 @@ export function applyTaskMutation(
 				}
 			}
 
+			// metadata merge with null-delete (CC semantics)
 			let newMetadata = current.metadata;
 			if (params.metadata !== undefined) {
 				const merged: Record<string, unknown> = { ...(current.metadata ?? {}) };
@@ -487,12 +573,25 @@ export function applyTaskMutation(
 // Persistence — snapshot-based replay with type-guard
 // ---------------------------------------------------------------------------
 
+/**
+ * Type-guard for the new TaskDetails envelope shape. Legacy pre-upgrade
+ * session entries were shaped as `{action, todos: [{id, text, done}], nextId}`
+ * and lack the `tasks` key — they are silently skipped by the replay loop.
+ */
 function isTaskDetails(value: unknown): value is TaskDetails {
 	if (!value || typeof value !== "object") return false;
 	const v = value as Record<string, unknown>;
 	return Array.isArray(v.tasks) && typeof v.nextId === "number";
 }
 
+/**
+ * Rebuild module state from the session entries on the current branch.
+ * Walks `ctx.sessionManager.getBranch()` and applies each matching
+ * `toolResult` entry's snapshot in order; last write wins. Called on
+ * `session_start` and `session_tree` from `index.ts:35,99`.
+ *
+ * `ctx` is typed loosely to avoid coupling to the ExtensionContext surface.
+ */
 export function reconstructTodoState(ctx: any): void {
 	tasks = [];
 	nextId = 1;
@@ -500,10 +599,9 @@ export function reconstructTodoState(ctx: any): void {
 		if (entry.type !== "message") continue;
 		const msg = entry.message;
 		if (msg.role !== "toolResult" || msg.toolName !== "todo") continue;
-		const details: unknown = msg.details;
-		if (!isTaskDetails(details)) continue;
-		tasks = details.tasks.map((t) => ({ ...t }));
-		nextId = details.nextId;
+		if (!isTaskDetails(msg.details)) continue;
+		tasks = msg.details.tasks.map((t) => ({ ...t }));
+		nextId = msg.details.nextId;
 	}
 }
 
@@ -511,8 +609,17 @@ export function reconstructTodoState(ctx: any): void {
 // Rendering helpers
 // ---------------------------------------------------------------------------
 
-function formatStatus(status: TaskStatus): string {
-	return status === "in_progress" ? "in progress" : status;
+function statusGlyph(status: TaskStatus, theme: Theme): string {
+	switch (status) {
+		case "pending":
+			return theme.fg("dim", "○");
+		case "in_progress":
+			return theme.fg("warning", "◐");
+		case "completed":
+			return theme.fg("success", "✓");
+		case "deleted":
+			return theme.fg("error", "✗");
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -619,12 +726,200 @@ export function registerTodoTool(pi: ExtensionAPI): void {
 			) {
 				text += ` ${theme.fg("accent", `#${args.id}`)}`;
 				if (args.action === "update" && args.status) {
-					text += ` ${theme.fg("muted", `→ ${formatStatus(args.status)}`)}`;
+					text += ` ${theme.fg("muted", `→ ${args.status}`)}`;
 				}
 			} else if (args.action === "list" && args.status) {
-				text += ` ${theme.fg("muted", formatStatus(args.status))}`;
+				text += ` ${theme.fg("muted", args.status)}`;
 			}
 			return new Text(text, 0, 0);
+		},
+
+		renderResult(result, { expanded }, theme, _context) {
+			const details = result.details as TaskDetails | undefined;
+			if (!details) {
+				const t = result.content[0];
+				return new Text(t?.type === "text" ? t.text : "", 0, 0);
+			}
+			if (details.error) {
+				return new Text(theme.fg("error", `✗ ${details.error}`), 0, 0);
+			}
+
+			switch (details.action) {
+				case "create": {
+					const created = details.tasks[details.tasks.length - 1];
+					let text =
+						theme.fg("success", "✓ Created ") +
+						theme.fg("accent", `#${created.id}`) +
+						" " +
+						theme.fg("muted", created.subject) +
+						" " +
+						theme.fg("dim", "(pending)");
+					if (expanded) {
+						if (created.activeForm) {
+							text += `\n  ${theme.fg("dim", `activeForm: ${created.activeForm}`)}`;
+						}
+						if (created.blockedBy?.length) {
+							text += `\n  ${theme.fg(
+								"dim",
+								`⛓ blocked by ${created.blockedBy
+									.map((id) => `#${id}`)
+									.join(", ")}`,
+							)}`;
+						}
+					}
+					return new Text(text, 0, 0);
+				}
+
+				case "update": {
+					const updatedId = details.params.id as number;
+					const updated = details.tasks.find((t) => t.id === updatedId);
+					if (!updated) return new Text(theme.fg("muted", "Updated"), 0, 0);
+					let text =
+						statusGlyph(updated.status, theme) +
+						" " +
+						theme.fg("accent", `#${updated.id}`);
+					if (details.params.status !== undefined) {
+						text += " " + theme.fg("muted", `→ ${updated.status}`);
+					}
+					text += " " + theme.fg("dim", updated.subject);
+					if (expanded) {
+						if (updated.activeForm && updated.status === "in_progress") {
+							text += `\n  ${theme.fg("dim", `activeForm: ${updated.activeForm}`)}`;
+						}
+						if (updated.blockedBy?.length) {
+							text += `\n  ${theme.fg(
+								"dim",
+								`⛓ blocked by ${updated.blockedBy
+									.map((id) => `#${id}`)
+									.join(", ")}`,
+							)}`;
+						}
+						if (updated.description) {
+							text += `\n  ${theme.fg("dim", updated.description)}`;
+						}
+					}
+					return new Text(text, 0, 0);
+				}
+
+				case "list": {
+					const includeDeleted = details.params.includeDeleted === true;
+					const statusFilter = details.params.status as TaskStatus | undefined;
+					let view = details.tasks;
+					if (!includeDeleted) {
+						view = view.filter((t) => t.status !== "deleted");
+					}
+					if (statusFilter) {
+						view = view.filter((t) => t.status === statusFilter);
+					}
+					if (view.length === 0) {
+						return new Text(theme.fg("dim", "No tasks"), 0, 0);
+					}
+					const counts: Record<TaskStatus, number> = {
+						pending: 0,
+						in_progress: 0,
+						completed: 0,
+						deleted: 0,
+					};
+					for (const t of view) counts[t.status]++;
+					const summary = [
+						counts.pending > 0 && `${counts.pending} pending`,
+						counts.in_progress > 0 && `${counts.in_progress} in_progress`,
+						counts.completed > 0 && `${counts.completed} completed`,
+						counts.deleted > 0 && `${counts.deleted} deleted`,
+					]
+						.filter(Boolean)
+						.join(" · ");
+					let text = theme.fg("muted", summary);
+
+					if (expanded) {
+						const display = view.slice(0, 15);
+						for (const t of display) {
+							const glyph = statusGlyph(t.status, theme);
+							const subject =
+								t.status === "completed" || t.status === "deleted"
+									? theme.fg("dim", t.subject)
+									: theme.fg("text", t.subject);
+							const form =
+								t.status === "in_progress" && t.activeForm
+									? " " + theme.fg("dim", `(${t.activeForm})`)
+									: "";
+							const block = t.blockedBy?.length
+								? " " +
+								  theme.fg(
+										"dim",
+										`⛓ ${t.blockedBy.map((id) => `#${id}`).join(",")}`,
+								  )
+								: "";
+							text += `\n  ${glyph} ${theme.fg(
+								"accent",
+								`#${t.id}`,
+							)} ${subject}${form}${block}`;
+						}
+						if (view.length > 15) {
+							text += `\n  ${theme.fg("dim", `... and ${view.length - 15} more`)}`;
+						}
+					}
+					return new Text(text, 0, 0);
+				}
+
+				case "get": {
+					const taskId = details.params.id as number;
+					const task = details.tasks.find((t) => t.id === taskId);
+					if (!task) {
+						return new Text(theme.fg("error", `#${taskId} not found`), 0, 0);
+					}
+					let text =
+						statusGlyph(task.status, theme) +
+						" " +
+						theme.fg("accent", `#${task.id}`) +
+						" " +
+						theme.fg("muted", task.subject);
+					if (expanded) {
+						if (task.description) {
+							text += `\n  ${theme.fg("dim", task.description)}`;
+						}
+						if (task.activeForm) {
+							text += `\n  ${theme.fg("dim", `activeForm: ${task.activeForm}`)}`;
+						}
+						if (task.blockedBy?.length) {
+							text += `\n  ${theme.fg(
+								"dim",
+								`⛓ blocked by ${task.blockedBy
+									.map((id) => `#${id}`)
+									.join(", ")}`,
+							)}`;
+						}
+						if (task.owner) {
+							text += `\n  ${theme.fg("dim", `owner: ${task.owner}`)}`;
+						}
+					}
+					return new Text(text, 0, 0);
+				}
+
+				case "delete": {
+					const taskId = details.params.id as number;
+					const task = details.tasks.find((t) => t.id === taskId);
+					const label = task?.subject
+						? " " + theme.fg("muted", task.subject)
+						: "";
+					return new Text(
+						theme.fg("error", "✗ Deleted ") +
+							theme.fg("accent", `#${taskId}`) +
+							label,
+						0,
+						0,
+					);
+				}
+
+				case "clear": {
+					return new Text(
+						theme.fg("success", "✓ ") +
+							theme.fg("muted", "Cleared all tasks"),
+						0,
+						0,
+					);
+				}
+			}
 		},
 	});
 }
@@ -656,7 +951,7 @@ export function registerTodosCommand(pi: ExtensionAPI): void {
 				header.push(`${completed.length}/${visible.length} completed`);
 			}
 			if (inProgress.length > 0) {
-				header.push(`${inProgress.length} ${formatStatus("in_progress")}`);
+				header.push(`${inProgress.length} in_progress`);
 			}
 			if (pending.length > 0) {
 				header.push(`${pending.length} pending`);
@@ -692,3 +987,68 @@ export function registerTodosCommand(pi: ExtensionAPI): void {
 		},
 	});
 }
+```
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Build succeeds: `pnpm --filter rpiv-core build` (no workspace present — verified via `bunx tsc -p /tmp/rpiv-tsconfig-check.json` against installed peer-deps, 0 errors)
+- [x] Tool name literal preserved: `grep -n '"todo"' extensions/rpiv-core/todo.ts` must show `name: "todo"` at the `registerTool` call
+- [x] Permissions file unchanged: `git diff extensions/rpiv-core/templates/pi-permissions.jsonc` must be empty
+- [x] Export surface preserved: `grep -n '^export' extensions/rpiv-core/todo.ts` must show `registerTodoTool`, `registerTodosCommand`, `reconstructTodoState`, and optionally `getTodos`
+- [x] No skill edits: `git diff skills/ agents/` must be empty
+- [x] No index.ts changes: `git diff extensions/rpiv-core/index.ts` must be empty
+
+#### Manual Verification:
+- [ ] **State machine**: create a task, update to `completed`, then try to update back to `pending` — must return error matching `/completed/i`
+- [ ] **Cycle detection**: create #1, create #2 blockedBy #1, then `update #1 addBlockedBy:[2]` — must return error matching `/cycle/i`
+- [ ] **Dangling reference**: `todo({action:"create", subject:"x", blockedBy:[999]})` must return error matching `/not found/i`
+- [ ] **Deleted reference rejection**: create #1, delete #1, then `create` with `blockedBy:[1]` must return error matching `/deleted/i`. Same for `update` with `addBlockedBy:[1]`
+- [ ] **Tombstone hidden from list**: create #1, delete #1, then `list` must return empty; `list({includeDeleted:true})` must include the tombstone
+- [ ] **Replay idempotency**: run `reconstructTodoState(ctx)` twice in a row; state must be identical after both calls
+- [ ] **Render glyphs**: visual inspection of `/todos` output after a mixed-state session — verify ○/◐/✓/✗ glyphs and status grouping
+- [ ] **`/todos` grouping**: after creating tasks in multiple statuses, run `/todos` — verify header shows "N/M completed · K in_progress · J pending" and sections are correctly grouped
+
+---
+
+## Testing Strategy
+
+### Automated:
+- `pnpm --filter rpiv-core build` — TypeScript compilation
+- Grep checks for tool name, export surface, unchanged permissions file
+- No lint/typecheck errors from the rewritten module
+
+### Manual Testing Steps:
+1. Start an interactive session and ask the agent to create 3-4 tasks with dependencies
+2. Verify `renderCall` shows compact one-line with action + id/subject
+3. Verify `renderResult` shows status glyph + transition info when collapsed, full details when expanded
+4. Ask agent to update tasks through status transitions (pending → in_progress → completed)
+5. Ask agent to delete a task and verify it's hidden from `list` but visible with `includeDeleted:true`
+6. Run `/todos` command and verify grouped output
+7. Test cycle detection: ask agent to create circular dependencies
+8. Test dangling reference: ask agent to create a task with a non-existent blockedBy id
+9. Navigate to a different branch and back — verify state restores correctly
+
+## Performance Considerations
+
+- Reducer is O(n) for cycle detection (single DFS per `update` with `addBlockedBy`); acceptable for realistic task list sizes (< 100)
+- `deriveBlocks()` in `list`/`get` is O(n²) worst case; fine for < 100 tasks
+- Replay loop is O(m) in session entries; reducer is NOT called during replay (snapshot copy only), so per-entry work stays O(1)
+- No additional `appendEntry` calls — no extra session I/O
+
+## Migration Notes
+
+**Legacy data**: pre-upgrade session entries shaped as `{id, text, done}` will be silently skipped by the new type-guard in `reconstructTodoState`. Affected sessions start fresh on first `todo` tool call after upgrade. Acceptable — rpiv-pi is pre-production with no deployed users.
+
+**Rollback strategy**: `git revert` on `extensions/rpiv-core/todo.ts`. No external state to undo; `templates/pi-permissions.jsonc` is untouched.
+
+**Backwards compatibility**: `registerTodoTool`, `registerTodosCommand`, `reconstructTodoState` signatures are preserved; `index.ts` does not need to change.
+
+## References
+
+- Design: `thoughts/shared/designs/2026-04-10_22-34-39_todo-tool-cc-parity.md`
+- Research: `thoughts/shared/research/2026-04-10_21-53-11_todo-tool-cc-parity.md`
+- Research questions: `thoughts/shared/questions/2026-04-10_20-59-46_todo-tool-cc-parity.md`
+- Current implementation: `extensions/rpiv-core/todo.ts` (baseline at commit `d484cb3`)
+- Upstream Pi example: `/usr/local/lib/node_modules/@mariozechner/pi-coding-agent/examples/extensions/todo.ts`
+- Render precedent: `extensions/web-tools/index.ts:247-272`
