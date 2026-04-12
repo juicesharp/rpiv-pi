@@ -6,10 +6,11 @@
  * as context. Advisor has no tools, never emits user-facing output, and returns
  * guidance (plan, correction, or stop signal) that the executor resumes with.
  *
- * Default state is OFF — the tool is registered at load but not in the active
- * tool list; /advisor opens a selector panel (ctx.ui.custom) to pick an advisor
- * model from ctx.modelRegistry.getAvailable() and toggles the tool in via
- * pi.setActiveTools(). Selection is in-memory and resets each session.
+ * Default state is OFF — the tool is registered at load but a before_agent_start
+ * handler strips it from the active tool list each turn while no advisor model
+ * is selected. /advisor opens a selector panel (ctx.ui.custom) to pick an
+ * advisor model from ctx.modelRegistry.getAvailable() and toggles the tool in
+ * via pi.setActiveTools(). Selection is in-memory and resets each session.
  */
 
 import { completeSimple, supportsXhigh, type Message, type ThinkingLevel } from "@mariozechner/pi-ai";
@@ -272,6 +273,21 @@ export function registerAdvisorTool(pi: ExtensionAPI): void {
 		async execute(_toolCallId, _params, signal, onUpdate, ctx) {
 			return executeAdvisor(ctx, signal, onUpdate);
 		},
+	});
+}
+
+// ---------------------------------------------------------------------------
+// before_agent_start handler — strip advisor from active tools when disabled
+// ---------------------------------------------------------------------------
+
+export function registerAdvisorBeforeAgentStart(pi: ExtensionAPI): void {
+	pi.on("before_agent_start", async () => {
+		if (!getAdvisorModel()) {
+			const active = pi.getActiveTools();
+			if (active.includes(ADVISOR_TOOL_NAME)) {
+				pi.setActiveTools(active.filter((n) => n !== ADVISOR_TOOL_NAME));
+			}
+		}
 	});
 }
 
