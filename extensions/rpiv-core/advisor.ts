@@ -12,7 +12,7 @@
  * pi.setActiveTools(). Selection is in-memory and resets each session.
  */
 
-import { completeSimple, type Message } from "@mariozechner/pi-ai";
+import { completeSimple, supportsXhigh, type Message, type ThinkingLevel } from "@mariozechner/pi-ai";
 import type { Api, Model, StopReason, Usage } from "@mariozechner/pi-ai";
 import {
 	DynamicBorder,
@@ -54,6 +54,7 @@ You NEVER call tools. You NEVER produce user-facing output. Be concise, directiv
 
 export interface AdvisorDetails {
 	advisorModel?: string;
+	effort?: ThinkingLevel;
 	usage?: Usage;
 	stopReason?: StopReason;
 	errorMessage?: string;
@@ -64,6 +65,7 @@ export interface AdvisorDetails {
 // ---------------------------------------------------------------------------
 
 let selectedAdvisor: Model<Api> | undefined;
+let selectedAdvisorEffort: ThinkingLevel | undefined;
 
 export function getAdvisorModel(): Model<Api> | undefined {
 	return selectedAdvisor;
@@ -71,6 +73,14 @@ export function getAdvisorModel(): Model<Api> | undefined {
 
 export function setAdvisorModel(model: Model<Api> | undefined): void {
 	selectedAdvisor = model;
+}
+
+export function getAdvisorEffort(): ThinkingLevel | undefined {
+	return selectedAdvisorEffort;
+}
+
+export function setAdvisorEffort(effort: ThinkingLevel | undefined): void {
+	selectedAdvisorEffort = effort;
 }
 
 // ---------------------------------------------------------------------------
@@ -82,11 +92,12 @@ function buildErrorResult(
 	userText: string,
 	errorMessage: string,
 ): AgentToolResult<AdvisorDetails> {
+	const effort = getAdvisorEffort();
 	return {
 		content: [{ type: "text", text: userText }],
 		details: advisorLabel
-			? { advisorModel: advisorLabel, errorMessage }
-			: { errorMessage },
+			? { advisorModel: advisorLabel, effort, errorMessage }
+			: { effort, errorMessage },
 	};
 }
 
@@ -104,6 +115,7 @@ async function executeAdvisor(
 		);
 	}
 	const advisorLabel = `${advisor.provider}:${advisor.id}`;
+	const effort = getAdvisorEffort();
 
 	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(advisor);
 	if (!auth.ok) {
@@ -140,15 +152,15 @@ async function executeAdvisor(
 	};
 
 	onUpdate?.({
-		content: [{ type: "text", text: `Consulting advisor (${advisorLabel})…` }],
-		details: { advisorModel: advisorLabel },
+		content: [{ type: "text", text: `Consulting advisor (${advisorLabel}${effort ? `, ${effort}` : ""})…` }],
+		details: { advisorModel: advisorLabel, effort },
 	});
 
 	try {
 		const response = await completeSimple(
 			advisor,
 			{ systemPrompt: ADVISOR_SYSTEM_PROMPT, messages: [userMessage] },
-			{ apiKey: auth.apiKey, headers: auth.headers, signal },
+			{ apiKey: auth.apiKey, headers: auth.headers, signal, reasoning: effort },
 		);
 
 		if (response.stopReason === "aborted") {
@@ -158,6 +170,7 @@ async function executeAdvisor(
 				],
 				details: {
 					advisorModel: advisorLabel,
+					effort,
 					usage: response.usage,
 					stopReason: response.stopReason,
 					errorMessage: response.errorMessage ?? "aborted",
@@ -175,6 +188,7 @@ async function executeAdvisor(
 				],
 				details: {
 					advisorModel: advisorLabel,
+					effort,
 					usage: response.usage,
 					stopReason: response.stopReason,
 					errorMessage: response.errorMessage,
@@ -193,6 +207,7 @@ async function executeAdvisor(
 				content: [{ type: "text", text: "Advisor returned no text content." }],
 				details: {
 					advisorModel: advisorLabel,
+					effort,
 					usage: response.usage,
 					stopReason: response.stopReason,
 					errorMessage: "empty response",
@@ -204,6 +219,7 @@ async function executeAdvisor(
 			content: [{ type: "text", text: advisorText }],
 			details: {
 				advisorModel: advisorLabel,
+				effort,
 				usage: response.usage,
 				stopReason: response.stopReason,
 			},
@@ -277,6 +293,12 @@ const ADVISOR_HEADER_PROSE_2 =
 	"reduced token usage.";
 
 const NO_ADVISOR_VALUE = "__no_advisor__";
+
+const EFFORT_HEADER_TITLE = "Reasoning Level";
+
+const EFFORT_HEADER_PROSE =
+	"Choose the reasoning effort level for the advisor. " +
+	"Higher levels produce stronger judgment but use more tokens.";
 
 function modelKey(m: { provider: string; id: string }): string {
 	return `${m.provider}:${m.id}`;
@@ -374,6 +396,7 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 
 			if (choice === NO_ADVISOR_VALUE) {
 				setAdvisorModel(undefined);
+				setAdvisorEffort(undefined);
 				if (activeHas) {
 					pi.setActiveTools(
 						activeTools.filter((n) => n !== ADVISOR_TOOL_NAME),
@@ -388,12 +411,92 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 				ctx.ui.notify(`Advisor selection not found: ${choice}`, "error");
 				return;
 			}
+
+			// Effort picker — only for reasoning-capable models
+			let effortChoice: ThinkingLevel | undefined;
+			if (picked.reasoning) {
+				const baseLevels: ThinkingLevel[] = ["minimal", "low", "medium", "high"];
+				const levels = supportsXhigh(picked)
+					? [...baseLevels, "xhigh" as ThinkingLevel]
+					: baseLevels;
+
+				const effortItems: SelectItem[] = levels.map((level) => ({
+					value: level,
+					label: level === "high" ? `${level}  (recommended)` : level,
+				}));
+
+				const effortResult = await ctx.ui.custom<string | null>(
+					(tui, theme, _kb, done) => {
+						const container = new Container();
+
+						container.addChild(
+							new DynamicBorder((s: string) => theme.fg("accent", s)),
+						);
+						container.addChild(new Spacer(1));
+						container.addChild(
+							new Text(
+								theme.fg("accent", theme.bold(EFFORT_HEADER_TITLE)),
+								1,
+								0,
+							),
+						);
+						container.addChild(new Spacer(1));
+						container.addChild(new Text(EFFORT_HEADER_PROSE, 1, 0));
+						container.addChild(new Spacer(1));
+
+						const selectList = new SelectList(
+							effortItems,
+							Math.min(effortItems.length, 10),
+							{
+								selectedPrefix: (t) => theme.bg("selectedBg", theme.fg("accent", t)),
+								selectedText: (t) => theme.bg("selectedBg", theme.bold(t)),
+								description: (t) => theme.fg("muted", t),
+								scrollInfo: (t) => theme.fg("dim", t),
+								noMatch: (t) => theme.fg("warning", t),
+							},
+						);
+						selectList.setSelectedIndex(baseLevels.indexOf("high"));
+						selectList.onSelect = (item) => done(item.value);
+						selectList.onCancel = () => done(null);
+						container.addChild(selectList);
+
+						container.addChild(new Spacer(1));
+						container.addChild(
+							new Text(
+								theme.fg("dim", "↑↓ navigate • enter select • esc cancel"),
+								1,
+								0,
+							),
+						);
+						container.addChild(new Spacer(1));
+						container.addChild(
+							new DynamicBorder((s: string) => theme.fg("accent", s)),
+						);
+
+						return {
+							render: (w) => container.render(w),
+							invalidate: () => container.invalidate(),
+							handleInput: (data) => {
+								selectList.handleInput(data);
+								tui.requestRender();
+							},
+						};
+					},
+				);
+
+				if (!effortResult) {
+					return;
+				}
+				effortChoice = effortResult as ThinkingLevel;
+			}
+
+			setAdvisorEffort(effortChoice);
 			setAdvisorModel(picked);
 			if (!activeHas) {
 				pi.setActiveTools([...activeTools, ADVISOR_TOOL_NAME]);
 			}
 			ctx.ui.notify(
-				`Advisor set to ${picked.name} (${picked.provider})`,
+				`Advisor: ${picked.provider}:${picked.id}${effortChoice ? `, ${effortChoice}` : ""}`,
 				"info",
 			);
 		},
