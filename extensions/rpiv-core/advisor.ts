@@ -415,15 +415,19 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 			// Effort picker — only for reasoning-capable models
 			let effortChoice: ThinkingLevel | undefined;
 			if (picked.reasoning) {
+				const OFF_VALUE = "__off__";
 				const baseLevels: ThinkingLevel[] = ["minimal", "low", "medium", "high"];
 				const levels = supportsXhigh(picked)
 					? [...baseLevels, "xhigh" as ThinkingLevel]
 					: baseLevels;
 
-				const effortItems: SelectItem[] = levels.map((level) => ({
-					value: level,
-					label: level === "high" ? `${level}  (recommended)` : level,
-				}));
+				const effortItems: SelectItem[] = [
+					{ value: OFF_VALUE, label: "off" },
+					...levels.map((level) => ({
+						value: level,
+						label: level === "high" ? `${level}  (recommended)` : level,
+					})),
+				];
 
 				const effortResult = await ctx.ui.custom<string | null>(
 					(tui, theme, _kb, done) => {
@@ -455,7 +459,7 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 								noMatch: (t) => theme.fg("warning", t),
 							},
 						);
-						selectList.setSelectedIndex(baseLevels.indexOf("high"));
+						selectList.setSelectedIndex(baseLevels.indexOf("high") + 1);
 						selectList.onSelect = (item) => done(item.value);
 						selectList.onCancel = () => done(null);
 						container.addChild(selectList);
@@ -487,7 +491,7 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 				if (!effortResult) {
 					return;
 				}
-				effortChoice = effortResult as ThinkingLevel;
+				effortChoice = effortResult === OFF_VALUE ? undefined : effortResult as ThinkingLevel;
 			}
 
 			setAdvisorEffort(effortChoice);
