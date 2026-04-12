@@ -23,7 +23,7 @@ import { hasPiSubagentsInstalled, hasPiPermissionSystemInstalled } from "./packa
 import { registerAskUserQuestionTool } from "./ask-user-question.js";
 import { registerTodoTool, registerTodosCommand, reconstructTodoState } from "./todo.js";
 import { TodoOverlay } from "./todo-overlay.js";
-import { registerAdvisorTool, registerAdvisorCommand, registerAdvisorBeforeAgentStart } from "./advisor.js";
+import { registerAdvisorTool, registerAdvisorCommand, registerAdvisorBeforeAgentStart, restoreAdvisorState } from "./advisor.js";
 
 export default function (pi: ExtensionAPI) {
 	// Todo overlay widget — constructed lazily at the first session_start with UI.
@@ -41,6 +41,9 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		clearInjectionState();
 		reconstructTodoState(ctx);
+
+		// Restore persisted advisor model + effort from previous session
+		restoreAdvisorState(ctx, pi);
 
 		// Construct/rebind the todo overlay when UI is available. setUICtx is
 		// idempotent on identity match and re-registers on rebind (/reload).

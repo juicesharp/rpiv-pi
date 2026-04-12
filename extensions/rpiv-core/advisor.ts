@@ -13,6 +13,9 @@
  * via pi.setActiveTools(). Selection is in-memory and resets each session.
  */
 
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { homedir } from "node:os";
 import { completeSimple, supportsXhigh, type Message, type ThinkingLevel } from "@mariozechner/pi-ai";
 import type { Api, Model, StopReason, Usage } from "@mariozechner/pi-ai";
 import {
@@ -39,6 +42,45 @@ import { Type } from "@sinclair/typebox";
 // ---------------------------------------------------------------------------
 
 export const ADVISOR_TOOL_NAME = "advisor";
+
+// ---------------------------------------------------------------------------
+// Config file persistence (cross-session)
+// ---------------------------------------------------------------------------
+
+interface AdvisorConfig {
+	modelKey?: string;
+	effort?: ThinkingLevel;
+}
+
+const ADVISOR_CONFIG_PATH = join(homedir(), ".config", "rpiv-pi", "advisor.json");
+
+function loadAdvisorConfig(): AdvisorConfig {
+	if (!existsSync(ADVISOR_CONFIG_PATH)) return {};
+	try {
+		return JSON.parse(readFileSync(ADVISOR_CONFIG_PATH, "utf-8")) as AdvisorConfig;
+	} catch {
+		return {};
+	}
+}
+
+function saveAdvisorConfig(key: string | undefined, effort: ThinkingLevel | undefined): void {
+	const config: AdvisorConfig = {};
+	if (key) config.modelKey = key;
+	if (effort) config.effort = effort;
+	mkdirSync(dirname(ADVISOR_CONFIG_PATH), { recursive: true });
+	writeFileSync(ADVISOR_CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", "utf-8");
+	try {
+		chmodSync(ADVISOR_CONFIG_PATH, 0o600);
+	} catch {
+		// chmod may fail on some filesystems — best effort only
+	}
+}
+
+function parseModelKey(key: string): { provider: string; modelId: string } | undefined {
+	const idx = key.indexOf(":");
+	if (idx < 1) return undefined;
+	return { provider: key.slice(0, idx), modelId: key.slice(idx + 1) };
+}
 
 export const ADVISOR_SYSTEM_PROMPT = `You are an advisor model in an advisor-strategy pattern. An executor model is running a task end-to-end — calling tools, reading results, iterating toward a solution. When the executor hits a decision it cannot reasonably solve alone, it consults you for guidance.
 
@@ -82,6 +124,46 @@ export function getAdvisorEffort(): ThinkingLevel | undefined {
 
 export function setAdvisorEffort(effort: ThinkingLevel | undefined): void {
 	selectedAdvisorEffort = effort;
+}
+
+// ---------------------------------------------------------------------------
+// Session restoration — called from index.ts session_start handler
+// ---------------------------------------------------------------------------
+
+export function restoreAdvisorState(ctx: ExtensionContext, pi: ExtensionAPI): void {
+	const config = loadAdvisorConfig();
+	if (!config.modelKey) return;
+
+	const parsed = parseModelKey(config.modelKey);
+	if (!parsed) return;
+
+	const model = ctx.modelRegistry.find(parsed.provider, parsed.modelId);
+	if (!model) {
+		if (ctx.hasUI) {
+			ctx.ui.notify(
+				`Previously configured advisor model ${config.modelKey} is no longer available`,
+				"warning",
+			);
+		}
+		return;
+	}
+
+	setAdvisorModel(model);
+	if (config.effort) {
+		setAdvisorEffort(config.effort);
+	}
+
+	const active = pi.getActiveTools();
+	if (!active.includes(ADVISOR_TOOL_NAME)) {
+		pi.setActiveTools([...active, ADVISOR_TOOL_NAME]);
+	}
+
+	if (ctx.hasUI) {
+		ctx.ui.notify(
+			`Advisor restored: ${model.provider}:${model.id}${config.effort ? `, ${config.effort}` : ""}`,
+			"info",
+		);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -413,6 +495,7 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 			if (choice === NO_ADVISOR_VALUE) {
 				setAdvisorModel(undefined);
 				setAdvisorEffort(undefined);
+				saveAdvisorConfig(undefined, undefined);
 				if (activeHas) {
 					pi.setActiveTools(
 						activeTools.filter((n) => n !== ADVISOR_TOOL_NAME),
@@ -475,7 +558,11 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 								noMatch: (t) => theme.fg("warning", t),
 							},
 						);
-						selectList.setSelectedIndex(baseLevels.indexOf("high") + 1);
+						const currentEffort = getAdvisorEffort();
+						const defaultIdx = currentEffort
+							? effortItems.findIndex((item) => item.value === currentEffort)
+							: -1;
+						selectList.setSelectedIndex(defaultIdx >= 0 ? defaultIdx : baseLevels.indexOf("high") + 1);
 						selectList.onSelect = (item) => done(item.value);
 						selectList.onCancel = () => done(null);
 						container.addChild(selectList);
@@ -512,6 +599,7 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 
 			setAdvisorEffort(effortChoice);
 			setAdvisorModel(picked);
+			saveAdvisorConfig(modelKey(picked), effortChoice);
 			if (!activeHas) {
 				pi.setActiveTools([...activeTools, ADVISOR_TOOL_NAME]);
 			}
