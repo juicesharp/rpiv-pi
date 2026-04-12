@@ -174,8 +174,10 @@ export default function (pi: ExtensionAPI) {
 			"Search the web for information via the Brave Search API. Returns a list of results with titles, URLs, and snippets. Use when you need current information not in your training data.",
 		promptSnippet: "Search the web for up-to-date information via Brave",
 		promptGuidelines: [
-			"Use web_search when you need current information that may not be in your training data — recent events, current library versions, live API documentation.",
-			"Prefer web_search over guessing when asked about version-specific behavior or time-sensitive facts.",
+			"Use web_search for information beyond your training data — recent events, current library versions, live API documentation.",
+			"Use the current year from \"Current date:\" in your context when searching for recent information or documentation.",
+			"After answering using search results, include a \"Sources:\" section listing relevant URLs as markdown hyperlinks: [Title](URL). Never skip this.",
+			"Domain filtering is supported to include or block specific websites.",
 			"If BRAVE_SEARCH_API_KEY is not set, ask the user to run /web-search-config before proceeding.",
 		],
 		parameters: Type.Object({
@@ -292,9 +294,10 @@ export default function (pi: ExtensionAPI) {
 			"Fetch the content of a specific URL. Returns text content for HTML pages (tags stripped), raw text for plain text or JSON. Supports http and https only. Content is truncated to avoid overwhelming the context window.",
 		promptSnippet: "Fetch and read content from a specific URL",
 		promptGuidelines: [
-			"Use web_fetch when you need to read the full content of a specific web page — documentation, blog posts, API references found via web_search.",
+			"Use web_fetch to read the full content of a specific URL — documentation pages, blog posts, API references found via web_search.",
 			"web_fetch is complementary to web_search: search finds URLs, fetch reads them.",
-			"Large responses are truncated at DEFAULT_MAX_LINES/DEFAULT_MAX_BYTES and spilled to a temp file — the temp path is reported in the result details.",
+			"After answering using fetched content, include a \"Sources:\" section with a markdown hyperlink to the fetched URL.",
+			"Large responses are truncated and spilled to a temp file — the temp path is reported in the result details.",
 		],
 		parameters: Type.Object({
 			url: Type.String({
