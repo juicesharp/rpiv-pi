@@ -583,11 +583,13 @@ export function registerTodoTool(pi: ExtensionAPI): void {
 			"Manage a task list for tracking multi-step progress. Actions: create (new task), update (change status/fields/dependencies), list (all tasks, optionally filtered by status), get (single task details), delete (tombstone), clear (reset all). Status: pending → in_progress → completed, plus deleted tombstone. Use this to plan and track multi-step work like research, design, and implementation.",
 		promptSnippet: "Manage a Claude-Code-style task list to track multi-step progress",
 		promptGuidelines: [
-			"Use `todo` to plan and track multi-step work: create tasks up front, update status as you progress, and list/get to check state. Replaces TaskCreate/TaskUpdate/TaskList/TaskGet from Claude Code.",
-			"Task status is a 4-state machine: pending → in_progress → completed, plus deleted as a tombstone. When starting work on a task, call update with status:\"in_progress\" and an activeForm spinner label. When finishing, call update with status:\"completed\".",
+			"Use `todo` for complex work with 3+ steps, when the user gives you a list of tasks, or immediately after receiving new instructions to capture requirements. Skip it for single trivial tasks and purely conversational requests.",
+			"When starting any task, mark it in_progress BEFORE beginning work. Mark it completed IMMEDIATELY when done — never batch completions. Exactly one task should be in_progress at a time.",
+			"Never mark a task completed if tests are failing, the implementation is partial, or you hit unresolved errors — keep it in_progress and create a new task for the blocker instead.",
+			"Task status is a 4-state machine: pending → in_progress → completed, plus deleted as a tombstone. Pass activeForm (present-continuous label, e.g. 'researching existing tool') when marking in_progress.",
 			"Use blockedBy to express dependencies (A is blocked by B). On create, pass blockedBy as the initial set. On update, use addBlockedBy / removeBlockedBy (additive merge — do not resend the full array). Cycles are rejected.",
 			"list hides tombstoned (deleted) tasks by default; pass includeDeleted:true to see them. Pass status to filter by a single status.",
-			"Subject must be short and imperative (e.g. 'Research existing tool'); description is for long-form detail. activeForm is a present-continuous label shown while in_progress (e.g. 'researching existing tool').",
+			"Subject must be short and imperative (e.g. 'Research existing tool'); description is for long-form detail. activeForm is a present-continuous label shown while in_progress.",
 		],
 		parameters: TodoParams,
 
