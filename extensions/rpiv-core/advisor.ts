@@ -225,10 +225,10 @@ async function executeAdvisor(
 const AdvisorParams = Type.Object({});
 
 const ADVISOR_DESCRIPTION =
-	"Escalate to a stronger reviewer model for guidance. When Claude needs " +
+	"Escalate to a stronger reviewer model for guidance. When you need " +
 	"stronger judgment — a complex decision, an ambiguous failure, a problem " +
-	"it's circling without progress — it escalates to the advisor model for " +
-	"guidance, then resumes. Takes NO parameters — when you call advisor(), " +
+	"you're circling without progress — escalate to the advisor model for " +
+	"guidance, then resume. Takes NO parameters — when you call advisor(), " +
 	"your entire conversation history is automatically forwarded. The advisor " +
 	"sees the task, every tool call you've made, every result you've seen.";
 
@@ -266,14 +266,15 @@ export function registerAdvisorTool(pi: ExtensionAPI): void {
 const ADVISOR_HEADER_TITLE = "Advisor Tool";
 
 const ADVISOR_HEADER_PROSE_1 =
-	"When Claude needs stronger judgment — a complex decision, an ambiguous " +
+	"When the active model needs stronger judgment — a complex decision, an ambiguous " +
 	"failure, a problem it's circling without progress — it escalates to the " +
 	"advisor model for guidance, then resumes. The advisor runs server-side " +
 	"and uses additional tokens.";
 
 const ADVISOR_HEADER_PROSE_2 =
-	"For certain workloads, pairing Sonnet as the main model with Opus as the " +
-	"advisor gives you near-Opus performance with reduced token usage.";
+	"For certain workloads, pairing a faster model as the main model with a " +
+	"more capable one as the advisor gives near-top-tier performance with " +
+	"reduced token usage.";
 
 const NO_ADVISOR_VALUE = "__no_advisor__";
 
