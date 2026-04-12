@@ -67,8 +67,12 @@ function saveAdvisorConfig(key: string | undefined, effort: ThinkingLevel | unde
 	const config: AdvisorConfig = {};
 	if (key) config.modelKey = key;
 	if (effort) config.effort = effort;
-	mkdirSync(dirname(ADVISOR_CONFIG_PATH), { recursive: true });
-	writeFileSync(ADVISOR_CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", "utf-8");
+	try {
+		mkdirSync(dirname(ADVISOR_CONFIG_PATH), { recursive: true });
+		writeFileSync(ADVISOR_CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", "utf-8");
+	} catch {
+		// write may fail on disk-full or permission errors — best effort only
+	}
 	try {
 		chmodSync(ADVISOR_CONFIG_PATH, 0o600);
 	} catch {
@@ -562,7 +566,7 @@ export function registerAdvisorCommand(pi: ExtensionAPI): void {
 						const defaultIdx = currentEffort
 							? effortItems.findIndex((item) => item.value === currentEffort)
 							: -1;
-						selectList.setSelectedIndex(defaultIdx >= 0 ? defaultIdx : baseLevels.indexOf("high") + 1);
+						selectList.setSelectedIndex(defaultIdx >= 0 ? defaultIdx : effortItems.findIndex((item) => item.value === "high"));
 						selectList.onSelect = (item) => done(item.value);
 						selectList.onCancel = () => done(null);
 						container.addChild(selectList);
