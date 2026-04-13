@@ -512,7 +512,41 @@ export function reconstructTodoState(ctx: any): void {
 // ---------------------------------------------------------------------------
 
 function formatStatus(status: TaskStatus): string {
-	return status === "in_progress" ? "in progress" : status;
+	switch (status) {
+		case "in_progress": return "in progress";
+		case "deleted": return "deleted";
+		default: return status;
+	}
+}
+
+const STATUS_GLYPH: Record<TaskStatus, string> = {
+	pending: "○",
+	in_progress: "◐",
+	completed: "●",
+	deleted: "⊘",
+};
+
+// Mirrors todo-overlay.ts:statusGlyph palette, but uses `muted` for deleted so
+// a successful delete is visually distinct from the error branch (which uses
+// `error` + `✗`).
+const STATUS_COLOR: Record<TaskStatus, "dim" | "warning" | "success" | "muted"> = {
+	pending: "dim",
+	in_progress: "warning",
+	completed: "success",
+	deleted: "muted",
+};
+
+const ACTION_GLYPH: Record<TaskAction, string> = {
+	create: "+",
+	update: "→",
+	delete: "×",
+	get: "›",
+	list: "☰",
+	clear: "∅",
+};
+
+function taskSubject(id: number): string | undefined {
+	return tasks.find((t) => t.id === id)?.subject;
 }
 
 // ---------------------------------------------------------------------------
@@ -608,25 +642,63 @@ export function registerTodoTool(pi: ExtensionAPI): void {
 		},
 
 		renderCall(args, theme, _context) {
-			let text =
-				theme.fg("toolTitle", theme.bold("todo ")) +
-				theme.fg("muted", args.action);
+			const glyph = ACTION_GLYPH[args.action] ?? args.action;
+			let text = theme.fg("toolTitle", theme.bold("todo ")) + theme.fg("muted", glyph);
+
 			if (args.action === "create" && args.subject) {
-				text += ` ${theme.fg("dim", `"${args.subject}"`)}`;
+				text += ` ${theme.fg("dim", args.subject)}`;
 			} else if (
-				(args.action === "update" ||
-					args.action === "get" ||
-					args.action === "delete") &&
+				(args.action === "update" || args.action === "get" || args.action === "delete") &&
 				args.id !== undefined
 			) {
-				text += ` ${theme.fg("accent", `#${args.id}`)}`;
-				if (args.action === "update" && args.status) {
-					text += ` ${theme.fg("muted", `→ ${formatStatus(args.status)}`)}`;
-				}
+				const subject = taskSubject(args.id);
+				text += ` ${theme.fg("accent", subject ?? `#${args.id}`)}`;
 			} else if (args.action === "list" && args.status) {
 				text += ` ${theme.fg("muted", formatStatus(args.status))}`;
+			} else if (args.action === "clear") {
+				// nothing extra
 			}
 			return new Text(text, 0, 0);
+		},
+
+		renderResult(result, _opts, theme, _context) {
+			if (result.isError) {
+				return new Text(theme.fg("error", "✗"), 0, 0);
+			}
+			const details = result.details as TaskDetails | undefined;
+			// Only create/update/delete advertise a status; list/get/clear render a
+			// plain ✓. This prevents list from rendering the last task's status as
+			// if it were the operation's result.
+			let status: TaskStatus | undefined;
+			if (details) {
+				const params = details.params as TaskMutationParams;
+				switch (details.action) {
+					case "create":
+						// New task is the last element of details.tasks.
+						status = details.tasks[details.tasks.length - 1]?.status;
+						break;
+					case "update":
+						status =
+							params.status ??
+							details.tasks.find((t) => t.id === params.id)?.status;
+						break;
+					case "delete":
+						status = details.tasks.find((t) => t.id === params.id)?.status;
+						break;
+					case "list":
+					case "get":
+					case "clear":
+						break;
+				}
+			}
+			if (status) {
+				return new Text(
+					theme.fg(STATUS_COLOR[status], `${STATUS_GLYPH[status]} ${formatStatus(status)}`),
+					0,
+					0,
+				);
+			}
+			return new Text(theme.fg("success", "✓"), 0, 0);
 		},
 	});
 }
