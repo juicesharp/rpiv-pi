@@ -33,24 +33,65 @@ Then wait for the user's research query.
 
 ### Step 2: Decompose and Spawn Discovery Agents
 
-1. **Analyze the research question:**
-   - Break down the user's query into composable discovery areas
-   - Identify specific components, patterns, or concepts to locate
+1. **Analyze the research question into dispatch slices, not themes:**
+   - Rewrite the user's query into the smallest useful discovery tasks before spawning agents
+   - A good slice names exactly one capability or seam, exactly one search objective, and 2-6 likely anchor terms (tool names, function names, command names, file names, config keys)
+   - Prefer slices like:
+     - one tool's registration + permissions
+     - one stateful subsystem's replay + UI wiring
+     - one command/config surface + persistence path
+     - package/install/bootstrap path: manifest + dependency checks + setup command
+     - skills/docs that assume a given runtime capability exists
+   - Avoid broad slices like:
+     - "tool extraction architecture"
+     - "plugin stacking"
+     - "everything related to todo/advisor/install/docs"
 
-2. **Spawn parallel discovery agents** using the Agent tool:
+2. **Write a short internal dispatch plan before spawning:**
+   For each slice, identify:
+   - Slice name
+   - Agent type
+   - Primary discovery question
+   - Anchor terms to grep for
 
-   - Use **codebase-locator** — spawn one per decomposed area from Step 1. If the research decomposes into 3 areas, spawn 3 locators, each searching exhaustively within its area. A single broad locator misses files; multiple focused locators provide complete coverage.
-   - Use **thoughts-locator** to find existing docs, decisions, and plans about the topic
-   - Use **integration-scanner** to map connections — inbound refs, outbound deps, config/DI/event wiring
+   This plan stays internal — do NOT present it to the developer unless asked.
 
-   Agent prompts should instruct locators to capture **function names, class/type names, and import paths** alongside file paths — not just locations. Example:
+3. **Spawn parallel discovery agents** using the Agent tool:
+
+   - Use **codebase-locator** for "Where do these files/symbols live?" slices — spawn one per focused code/discovery seam. Prefer 5-9 narrow discovery agents over 2-3 broad ones when the topic spans multiple subsystems.
+   - Use **thoughts-locator** only for historical docs, decisions, plans, and prior artifacts about the topic
+   - Use **integration-scanner** for "What references/configures/wires this seam?" slices — inbound refs, outbound deps, config/DI/event wiring
+
+   If a prompt contains multiple unrelated goals joined by "and", split it into multiple narrower prompts before spawning.
+
+   Agent prompts should instruct locators to capture **function names, class/type names, and import paths** alongside file paths — not just locations. Shape prompts like this:
+   - Name the exact target seam in the first sentence
+   - Limit each prompt to one primary question
+   - Include concrete anchor terms to grep for
+   - Ask for paths + signatures + import/wiring anchors only
+   - Do NOT ask a locator to also cover packaging, docs, runtime wiring, and permissions unless they are the same seam
+
+   Example prompts:
    - codebase-locator: "Find ALL files that [implement/call/emit/subscribe to/import] [specific component]. For each file, report the key function signatures, exported types, and import chains. Search exhaustively — grep for method names, class names, event strings."
    - integration-scanner: "What connects to [area] — inbound refs, outbound deps, config/DI/event wiring. For each connection, report the function/method that creates it."
    - thoughts-locator: "What existing docs/decisions exist about [topic]"
 
+   Bad dispatch prompt:
+   - "Research package loading, installation, permissions, docs, runtime wiring, and extraction points for several tools and commands."
+
+   Better dispatch prompts:
+   - "Find all files that implement, register, or reference one specific tool and its permissions entry."
+   - "Map one stateful subsystem's replay/state reconstruction, command surface, and UI wiring."
+   - "Map one configurable subsystem's restore flow, persistence path, command UI, and active-tool toggling."
+   - "Find package/install/bootstrap files: manifest, dependency checks, setup command, permissions seeding."
+   - "Find skills/docs/guidance that assume a given runtime capability is baseline."
+
+   Dispatch budget heuristic:
+   - If the topic spans multiple tools/components, runtime wiring + installation + docs, or more than one lifecycle boundary, split it into at least 4 focused slices before spawning.
+
    Each agent works in isolation — provide complete context in the prompt, including specific directory paths when the target is known.
 
-3. **Wait for ALL agents to complete** before proceeding.
+4. **Wait for ALL agents to complete** before proceeding.
 
 ### Step 3: Read Key Files for Depth
 
