@@ -103,23 +103,40 @@ This agent runs with full knowledge of discovered files — its findings go into
 
 2. **Developer checkpoint — grounded questions one at a time:**
 
-   Start with grounded questions referencing real findings with file:line evidence. Ask ONE question at a time, waiting for the answer before the next. Use a **Question:** prefix. Each question must pull NEW information from the developer — not confirm what you already found:
+   Start with grounded questions referencing real findings with file:line evidence. Ask ONE question at a time, waiting for the answer before the next. Use a **❓ Question:** prefix. Each question must pull NEW information from the developer — not confirm what you already found:
 
    Every question MUST embed at least one `file:line` reference in the question text — not just in surrounding context. Examples:
 
-   - "Question: `src/events/orders.ts:45-67` has 3 event hooks but no error recovery path. Is there a retry mechanism elsewhere I'm not seeing?"
-   - "Question: Pattern-finder found manual mapping at `src/services/OrderService.ts:45` (8 uses) vs AutoMapper at `src/services/UserService.ts:12` (2 uses). Which should new code follow?"
-   - "Question: Precedent commit `abc123` required a follow-up fix at `src/handlers/key.ts:158` for connection leak. Should we account for that pattern in this design?"
+   - "❓ Question: `src/events/orders.ts:45-67` has 3 event hooks but no error recovery path. Is there a retry mechanism elsewhere I'm not seeing?"
+   - "❓ Question: Pattern-finder found manual mapping at `src/services/OrderService.ts:45` (8 uses) vs AutoMapper at `src/services/UserService.ts:12` (2 uses). Which should new code follow?"
+   - "❓ Question: Precedent commit `abc123` required a follow-up fix at `src/handlers/key.ts:158` for connection leak. Should we account for that pattern in this design?"
 
    Anti-patterns — NEVER ask these:
    - "Is this research to understand X or prepare for Y?" — confirmatory, pulls zero new information
    - "Does this look correct?" / "Should I continue?" — asks developer to validate YOUR work instead of providing NEW context
    - Questions without `file:line` — if you can't ground it in code, it's not a research question
 
+   **Question patterns by finding type:**
+
+   - **Pattern conflict**: "Found 2 implementations of [X] — which is canonical?" with options citing `file:line` + occurrence count
+   - **Scope boundary**: "Question [N] references files [A,B,C] but analysis shows [D] is the real integration point. Extend scope?" with yes/no + "describe what I missed"
+   - **Priority override**: "Questions Q1 and Q2 have competing implications for [area]. Which is load-bearing?" with options
+   - **Integration ambiguity**: "Found no connection between [X] and [Y]. Is there an indirect path?" (free-text — can't predict the answer)
+
    **Choosing question format:**
 
-   - **ask_user_question tool** — when your question has 2-4 concrete options from analysis (pattern conflicts, integration choices, scope boundaries). The user can always pick "Other" for free-text.
-   - **Free-text with Question: prefix** — when the question is open-ended and options can't be predicted.
+   - **`ask_user_question` tool** — when your question has 2-4 concrete options from code analysis (pattern conflicts, integration choices, scope boundaries, priority overrides). The user can always pick "Other" for free-text. Example:
+
+     > Use the `ask_user_question` tool with the following question: "Found 2 patterns for retry logic — which is canonical?". Header: "Pattern". Options: "Event-sourced retry (Recommended)" (`src/events/orders.ts:45-67` — 3 hooks, matches precedent commit `abc123`); "Direct retry loop" (`src/services/OrderService.ts:112` — single use, no event traceability).
+
+   - **Free-text with ❓ Question: prefix** — when the question is open-ended and options can't be predicted (discovery, "what am I missing?", corrections). Example:
+     "❓ Question: `src/events/orders.ts:45-67` has 3 event hooks but no error recovery path. Is there a retry mechanism elsewhere I'm not seeing?"
+
+   **Anti-pattern** — do NOT dump a verbose paragraph mixing analysis with a trailing question:
+
+   ❌ "The premise inversion is load-bearing for prioritization — it means Site A is a no-op, and the real bloat only hits general-purpose dispatches. Given this, where is the bloat actually landing? Do your skills dispatch named bundled agents — in which case append-mode is irrelevant — or general-purpose — in which case it IS the dominant source?"
+
+   ✅ Extract the 2 concrete options and call `ask_user_question`: "Where is the prompt bloat landing?". Header: "Bloat source". Options: "Named bundled agents (Recommended)" (Skills dispatch `codebase-analyzer` etc. — `prompt_mode: "replace"`, no parent inheritance); "General-purpose agent" (`default-agents.ts:11-28` — `promptMode: "append"`, inherits full parent prompt).
 
    **Batching**: When you have 2-4 independent questions (answers don't depend on each other), you MAY batch them in a single `ask_user_question` call. Keep dependent questions sequential.
 
