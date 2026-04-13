@@ -1,7 +1,7 @@
 # scripts/
 
 ## Responsibility
-`migrate.js` — the standalone CLI that migrates in-place `CLAUDE.md` files to the
+`migrate.js` — the standalone CLI that migrates in-place `.rpiv/guidance/architecture.md` files to the
 `.rpiv/guidance/` shadow tree format. Actively invoked by the `migrate-to-guidance` skill.
 
 ## Dependencies
@@ -12,7 +12,7 @@ Node.js built-ins only — `fs`, `path`, `child_process`. Zero npm dependencies.
 
 ## Module Structure
 ```
-migrate.js            — Standalone CLI: discovers CLAUDE.md files, maps to .rpiv/guidance/ targets, writes output
+migrate.js            — Standalone CLI: discovers .rpiv/guidance/architecture.md files, maps to .rpiv/guidance/ targets, writes output
 ```
 
 ## Architectural Boundaries

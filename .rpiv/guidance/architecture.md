@@ -8,7 +8,7 @@ A Pi CLI plugin package that extends the Pi coding agent with TypeScript runtime
 rpiv-pi/
 ├── extensions/rpiv-core/   — Pi runtime extension: tools, commands, session hooks (TypeScript)
 ├── extensions/web-tools/   — web_search + web_fetch tools via Brave Search API (TypeScript)
-├── scripts/                — migrate.js CLI for CLAUDE.md → .rpiv/guidance/ migration
+├── scripts/                — migrate.js CLI for .rpiv/guidance/architecture.md → .rpiv/guidance/ migration
 ├── agents/                 — Named subagent profiles dispatched by skills (Markdown)
 ├── skills/                 — User-invocable AI workflow skills (Markdown)
 └── thoughts/shared/        — Pipeline artifact store: questions/, research/, designs/, plans/, reviews/
@@ -35,12 +35,12 @@ rpiv-pi augments the Pi agent with a research-design-implement skill pipeline an
 
 <important if="you are adding a new end-to-end feature (tool + skill + agent)">
 ## Adding a Feature End-to-End
-1. Runtime tool or command → see `extensions/rpiv-core/CLAUDE.md`
-2. Skill workflow → see `skills/CLAUDE.md`
-3. Named subagent (if the skill needs a new specialist) → see `agents/CLAUDE.md`
+1. Runtime tool or command → see `.rpiv/guidance/extensions/rpiv-core/architecture.md`
+2. Skill workflow → see `.rpiv/guidance/skills/architecture.md`
+3. Named subagent (if the skill needs a new specialist) → see `.rpiv/guidance/agents/architecture.md`
 </important>
 
 <important if="you are modifying guidance injection behavior">
 ## Guidance Injection
-`extensions/rpiv-core/guidance.ts` — single Pi delivery path. `pi.on("tool_call")` resolves per-depth at most one of `AGENTS.md > CLAUDE.md > .rpiv/guidance/<sub>/architecture.md` (depth 0 skips AGENTS/CLAUDE — Pi's own resource-loader handles `<cwd>` already). Injects each new file via `pi.sendMessage({ display: false })`; in-process `Set` dedups across the session; cleared on `session_start`/`session_compact`/`session_shutdown`.
+`extensions/rpiv-core/guidance.ts` — single Pi delivery path. `pi.on("tool_call")` resolves per-depth at most one of `AGENTS.md > .rpiv/guidance/architecture.md > .rpiv/guidance/<sub>/architecture.md` (depth 0 skips AGENTS/CLAUDE — Pi's own resource-loader handles `<cwd>` already). Injects each new file via `pi.sendMessage({ display: false })`; in-process `Set` dedups across the session; cleared on `session_start`/`session_compact`/`session_shutdown`.
 </important>
