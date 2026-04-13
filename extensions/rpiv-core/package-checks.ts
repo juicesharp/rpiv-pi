@@ -37,3 +37,19 @@ export function hasPiSubagentsInstalled(): boolean {
 export function hasPiPermissionSystemInstalled(): boolean {
 	return readInstalledPackages().some((entry) => /pi-permission-system/i.test(entry));
 }
+
+export function hasRpivAskUserQuestionInstalled(): boolean {
+	return readInstalledPackages().some((entry) => /rpiv-ask-user-question/i.test(entry));
+}
+
+export function hasRpivTodoInstalled(): boolean {
+	return readInstalledPackages().some((entry) => /rpiv-todo/i.test(entry));
+}
+
+export function hasRpivAdvisorInstalled(): boolean {
+	return readInstalledPackages().some((entry) => /rpiv-advisor/i.test(entry));
+}
+
+export function hasRpivWebToolsInstalled(): boolean {
+	return readInstalledPackages().some((entry) => /rpiv-web-tools/i.test(entry));
+}

@@ -2,24 +2,26 @@
 
 Skill-based development workflow for Pi — research, design, plan, implement, review.
 
-Version: 0.3.0
+Version: 0.4.0
 
 ## Requirements
 
-Peer dependencies (expected to be installed in the Pi environment):
+All dependencies are peer-dependencies — expected to be installed in the Pi environment.
 
+### Runtime libraries
 - `@mariozechner/pi-coding-agent` — the Pi CLI runtime
 - `@mariozechner/pi-ai`
 - `@mariozechner/pi-tui`
 - `@sinclair/typebox`
 
-Direct dependency, declared in `package.json`:
+### Sibling Pi plugins (hard-required)
+- `@tintinweb/pi-subagents` — provides the `Agent` tool and the `/agents` command. Without it, every rpiv-pi skill that dispatches a named subagent silently falls back to `general-purpose`.
+- `@juicesharp/rpiv-ask-user-question` — provides the `ask_user_question` tool.
+- `@juicesharp/rpiv-todo` — provides the `todo` tool, `/todos` command, and overlay widget.
+- `@juicesharp/rpiv-advisor` — provides the `advisor` tool and `/advisor` command.
+- `@juicesharp/rpiv-web-tools` — provides the `web_search` and `web_fetch` tools and `/web-search-config` command.
 
-- `@tintinweb/pi-subagents ^0.5.2` — provides the `Agent` tool and the `/agents` command. Without it, every rpiv-pi skill that dispatches a named subagent silently falls back to `general-purpose`.
-
-Recommended, separate install:
-
-- `pi-permission-system` — enforces the permission rules in `~/.pi/agent/pi-permissions.jsonc`. rpiv-pi seeds this file with sensible defaults on first session start but does not enforce them itself.
+rpiv-pi emits an aggregated warning on session start listing any missing siblings, and `/rpiv-setup` installs them all in one go.
 
 ## Installation
 
@@ -27,26 +29,39 @@ Recommended, separate install:
 pi install /Users/sguslystyi/rpiv-pi
 ```
 
-```bash
-pi install npm:pi-permission-system
+Then from inside a Pi session, install all siblings in one go:
+
+```
+/rpiv-setup
 ```
 
-From inside a Pi session (one-time, sets the Brave Search API key used by `web_search`):
+Or install them manually:
+
+```bash
+pi install npm:@tintinweb/pi-subagents
+pi install npm:@juicesharp/rpiv-ask-user-question
+pi install npm:@juicesharp/rpiv-todo
+pi install npm:@juicesharp/rpiv-advisor
+pi install npm:@juicesharp/rpiv-web-tools
+```
+
+After the first install of `@juicesharp/rpiv-web-tools`, set the Brave Search API key from inside a Pi session:
 
 ```
 /web-search-config
 ```
 
-On first session start in any project, rpiv-pi auto-copies 9 agent files to `<cwd>/.pi/agents/` and seeds `~/.pi/agent/pi-permissions.jsonc` if missing.
+On first session start in any project, rpiv-pi auto-copies agent files to `<cwd>/.pi/agents/`.
 
 ## What's included
 
-### Extensions (2)
+### Extension in this package
 
 | Extension | Tools | Commands | Session hooks |
 |-----------|-------|----------|---------------|
-| `rpiv-core` | `ask_user_question`, `todo` | `/todos`, `/rpiv-update-agents`, `/rpiv-setup` | `session_start`, `session_tree`, `session_compact`, `session_shutdown`, `tool_call`, `before_agent_start` |
-| `web-tools` | `web_search`, `web_fetch` | `/web-search-config` | — |
+| `rpiv-core` | — | `/rpiv-update-agents`, `/rpiv-setup` | `session_start`, `session_compact`, `session_shutdown`, `tool_call`, `before_agent_start` |
+
+Tool-owning plugins are shipped separately — see the Requirements section above.
 
 ### Skills (17)
 
@@ -97,6 +112,17 @@ Dispatched via the `Agent` tool (provided by `@tintinweb/pi-subagents`) with `su
 /skill:write-plan thoughts/shared/designs/<latest>.md
 /skill:implement-plan thoughts/shared/plans/<latest>.md Phase <N>
 ```
+
+## Migration from 0.3.x
+
+Users upgrading from rpiv-pi 0.3.x need to install the four extracted sibling plugins. The fastest path:
+
+1. `pi install <path-to-rpiv-pi>@0.4.0`
+2. Start a Pi session.
+3. Run `/rpiv-setup` and confirm.
+4. Restart the session.
+
+Saved configuration at `~/.config/rpiv-pi/advisor.json` and `~/.config/rpiv-pi/web-tools.json` is no longer read. Re-run `/advisor` and `/web-search-config` once after installing their respective sibling plugins. The `BRAVE_SEARCH_API_KEY` env var continues to work unchanged.
 
 ## Notes
 

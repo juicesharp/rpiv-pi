@@ -1,16 +1,18 @@
 /**
- * rpiv-core — Main extension for the rpiv-pi package
+ * rpiv-core — Orchestrator extension for the rpiv-pi package
  *
  * Provides:
- * - ask_user_question tool (replaces Claude Code's AskUserQuestion)
- * - todo tool (replaces Claude Code's TaskCreate/TaskUpdate)
  * - Guidance injection (replaces inject-guidance.js hook)
  * - Git context injection (replaces !`git ...` shell evaluation in skills)
  * - thoughts/ directory scaffolding on session start
  * - Bundled-agent auto-copy into <cwd>/.pi/agents/
- * - Permissions-file seeder for ~/.pi/agent/pi-permissions.jsonc
- * - /todos, /rpiv-update-agents, /rpiv-setup slash commands
- * - Session lifecycle management (compact cleanup, shutdown)
+ * - active_agent seed workaround for pi-permission-system@0.4.1
+ * - Aggregated session_start warning for missing sibling plugins
+ * - /rpiv-update-agents, /rpiv-setup slash commands
+ *
+ * Tool-owning plugins are siblings: @juicesharp/rpiv-ask-user-question,
+ * @juicesharp/rpiv-todo, @juicesharp/rpiv-advisor, @juicesharp/rpiv-web-tools.
+ * Install via /rpiv-setup.
  */
 
 import { mkdirSync } from "node:fs";
@@ -18,41 +20,20 @@ import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { clearInjectionState, handleToolCallGuidance, injectRootGuidance } from "./guidance.js";
 import { copyBundledAgents } from "./agents.js";
-import { seedPermissionsFile } from "./permissions.js";
-import { hasPiSubagentsInstalled, hasPiPermissionSystemInstalled } from "./package-checks.js";
-import { registerAskUserQuestionTool } from "./ask-user-question.js";
-import { registerTodoTool, registerTodosCommand, reconstructTodoState } from "./todo.js";
-import { TodoOverlay } from "./todo-overlay.js";
-import { registerAdvisorTool, registerAdvisorCommand, registerAdvisorBeforeAgentStart, restoreAdvisorState } from "./advisor.js";
+import {
+	hasPiSubagentsInstalled,
+	hasPiPermissionSystemInstalled,
+	hasRpivAskUserQuestionInstalled,
+	hasRpivTodoInstalled,
+	hasRpivAdvisorInstalled,
+	hasRpivWebToolsInstalled,
+} from "./package-checks.js";
 
 export default function (pi: ExtensionAPI) {
-	// Todo overlay widget — constructed lazily at the first session_start with UI.
-	let todoOverlay: TodoOverlay | undefined;
-
-	// ── Register Tools & Commands ──────────────────────────────────────────
-	registerAskUserQuestionTool(pi);
-	registerTodoTool(pi);
-	registerTodosCommand(pi);
-	registerAdvisorTool(pi);
-	registerAdvisorCommand(pi);
-	registerAdvisorBeforeAgentStart(pi);
-
 	// ── Session Start ──────────────────────────────────────────────────────
 	pi.on("session_start", async (_event, ctx) => {
 		clearInjectionState();
 		injectRootGuidance(ctx.cwd, pi);
-		reconstructTodoState(ctx);
-
-		// Restore persisted advisor model + effort from previous session
-		restoreAdvisorState(ctx, pi);
-
-		// Construct/rebind the todo overlay when UI is available. setUICtx is
-		// idempotent on identity match and re-registers on rebind (/reload).
-		if (ctx.hasUI) {
-			todoOverlay ??= new TodoOverlay();
-			todoOverlay.setUICtx(ctx.ui);
-			todoOverlay.update();
-		}
 
 		// Seed a root `active_agent` session entry so pi-permission-system's
 		// input handler can resolve the root context on the very first user
@@ -86,51 +67,32 @@ export default function (pi: ExtensionAPI) {
 			);
 		}
 
-		// Seed ~/.pi/agent/pi-permissions.jsonc with rpiv-pi-friendly rules
-		const seeded = seedPermissionsFile();
-		if (ctx.hasUI && seeded) {
-			ctx.ui.notify(
-				"Seeded ~/.pi/agent/pi-permissions.jsonc with rpiv-pi defaults",
-				"info",
-			);
-		}
-
-		// Warn if @tintinweb/pi-subagents is not installed
-		if (ctx.hasUI && !hasPiSubagentsInstalled()) {
-			ctx.ui.notify(
-				"rpiv-pi needs @tintinweb/pi-subagents for the Agent tool. Run /rpiv-setup to install it.",
-				"warning",
-			);
+		// Aggregated warning for any missing sibling plugins
+		if (ctx.hasUI) {
+			const missing: string[] = [];
+			if (!hasPiSubagentsInstalled()) missing.push("@tintinweb/pi-subagents");
+			if (!hasRpivAskUserQuestionInstalled()) missing.push("@juicesharp/rpiv-ask-user-question");
+			if (!hasRpivTodoInstalled()) missing.push("@juicesharp/rpiv-todo");
+			if (!hasRpivAdvisorInstalled()) missing.push("@juicesharp/rpiv-advisor");
+			if (!hasRpivWebToolsInstalled()) missing.push("@juicesharp/rpiv-web-tools");
+			if (missing.length > 0) {
+				ctx.ui.notify(
+					`rpiv-pi requires ${missing.length} sibling extension(s): ${missing.join(", ")}. Run /rpiv-setup to install them.`,
+					"warning",
+				);
+			}
 		}
 	});
 
-	// ── Session Compact ────────────────────────────────────────────────────
+	// ── Session Compact — drop injection state, re-inject root guidance ────
 	pi.on("session_compact", async (_event, ctx) => {
 		clearInjectionState();
 		injectRootGuidance(ctx.cwd, pi);
-		reconstructTodoState(ctx);
-		todoOverlay?.update();
 	});
 
 	// ── Session Shutdown ───────────────────────────────────────────────────
 	pi.on("session_shutdown", async (_event, _ctx) => {
 		clearInjectionState();
-		todoOverlay?.dispose();
-		todoOverlay = undefined;
-	});
-
-	// ── Session Tree (reconstruct todo state) ──────────────────────────────
-	pi.on("session_tree", async (_event, ctx) => {
-		reconstructTodoState(ctx);
-		todoOverlay?.update();
-	});
-
-	// ── Tool Execution End — refresh todo overlay on todo mutations ───────
-	pi.on("tool_execution_end", async (event, _ctx) => {
-		if (event.toolName !== "todo" || event.isError) return;
-		// Reads getTodos() at render time; do NOT call reconstructTodoState
-		// here (branch is stale — message_end runs after tool_execution_end).
-		todoOverlay?.update();
 	});
 
 	// ── Guidance Injection ─────────────────────────────────────────────────
@@ -177,7 +139,7 @@ export default function (pi: ExtensionAPI) {
 
 	// ── /rpiv-setup Command ────────────────────────────────────────────────
 	pi.registerCommand("rpiv-setup", {
-		description: "Install rpiv-pi's sibling dependencies (pi-subagents, pi-permission-system)",
+		description: "Install rpiv-pi's sibling extension plugins",
 		handler: async (_args, ctx) => {
 			if (!ctx.hasUI) {
 				ctx.ui.notify("/rpiv-setup requires interactive mode", "error");
@@ -191,10 +153,28 @@ export default function (pi: ExtensionAPI) {
 					reason: "required — provides Agent / get_subagent_result / steer_subagent tools",
 				});
 			}
-			if (!hasPiPermissionSystemInstalled()) {
+			if (!hasRpivAskUserQuestionInstalled()) {
 				missing.push({
-					pkg: "npm:pi-permission-system",
-					reason: "recommended — enforces the rules rpiv-core seeds on first run",
+					pkg: "npm:@juicesharp/rpiv-ask-user-question",
+					reason: "required — provides the ask_user_question tool",
+				});
+			}
+			if (!hasRpivTodoInstalled()) {
+				missing.push({
+					pkg: "npm:@juicesharp/rpiv-todo",
+					reason: "required — provides the todo tool + /todos command + overlay widget",
+				});
+			}
+			if (!hasRpivAdvisorInstalled()) {
+				missing.push({
+					pkg: "npm:@juicesharp/rpiv-advisor",
+					reason: "required — provides the advisor tool + /advisor command",
+				});
+			}
+			if (!hasRpivWebToolsInstalled()) {
+				missing.push({
+					pkg: "npm:@juicesharp/rpiv-web-tools",
+					reason: "required — provides web_search + web_fetch tools + /web-search-config",
 				});
 			}
 

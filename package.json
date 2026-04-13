@@ -1,6 +1,6 @@
 {
   "name": "rpiv-pi",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Skill-based development workflow for Pi — research, design, plan, implement, review",
   "keywords": ["pi-package", "pi-extension"],
   "type": "module",
@@ -12,9 +12,11 @@
     "@mariozechner/pi-ai": "*",
     "@mariozechner/pi-coding-agent": "*",
     "@mariozechner/pi-tui": "*",
-    "@sinclair/typebox": "*"
-  },
-  "dependencies": {
-    "@tintinweb/pi-subagents": "^0.5.2"
+    "@sinclair/typebox": "*",
+    "@tintinweb/pi-subagents": "*",
+    "@juicesharp/rpiv-ask-user-question": "*",
+    "@juicesharp/rpiv-todo": "*",
+    "@juicesharp/rpiv-advisor": "*",
+    "@juicesharp/rpiv-web-tools": "*"
   }
 }
