@@ -15,7 +15,8 @@
  * `resolveGuidance` is pure logic with no ExtensionAPI references
  * (utility-module rule from extensions/rpiv-core/CLAUDE.md). Side
  * effects (sendMessage, in-memory dedup Set) live in
- * `handleToolCallGuidance` and `clearInjectionState`.
+ * `handleToolCallGuidance`, `injectRootGuidance`, and
+ * `clearInjectionState`.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -104,6 +105,50 @@ const injectedGuidance = new Set<string>();
 
 export function clearInjectionState() {
 	injectedGuidance.clear();
+}
+
+// ---------------------------------------------------------------------------
+// Root Guidance Injection (session_start)
+// ---------------------------------------------------------------------------
+
+/**
+ * Inject the root `.rpiv/guidance/architecture.md` at session start.
+ *
+ * Called from `session_start` so the root guidance is available before the
+ * first agent turn — without waiting for a read/edit/write tool_call.
+ * Uses the same `injectedGuidance` Set for dedup, so `handleToolCallGuidance`
+ * won't re-inject it later.
+ */
+export function injectRootGuidance(cwd: string, pi: ExtensionAPI): void {
+	const relativePath = ".rpiv/guidance/architecture.md";
+
+	if (injectedGuidance.has(relativePath)) return;
+
+	const absolutePath = join(cwd, relativePath);
+	if (!existsSync(absolutePath)) return;
+
+	let content: string;
+	try {
+		content = readFileSync(absolutePath, "utf-8");
+	} catch {
+		// Silent failure mirrors handleToolCallGuidance's posture — session_start
+		// runs before any UI is bound, so a permissions/race error here must not
+		// crash the hook. Don't mark as injected so a later tool_call can retry.
+		return;
+	}
+	injectedGuidance.add(relativePath);
+
+	const label = formatLabel({
+		relativePath,
+		absolutePath,
+		content,
+		kind: "architecture",
+	});
+	pi.sendMessage({
+		customType: "rpiv-guidance",
+		content: `## Project Guidance: ${label}\n\n${content}`,
+		display: false,
+	});
 }
 
 // ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { clearInjectionState, handleToolCallGuidance } from "./guidance.js";
+import { clearInjectionState, handleToolCallGuidance, injectRootGuidance } from "./guidance.js";
 import { copyBundledAgents } from "./agents.js";
 import { seedPermissionsFile } from "./permissions.js";
 import { hasPiSubagentsInstalled, hasPiPermissionSystemInstalled } from "./package-checks.js";
@@ -40,6 +40,7 @@ export default function (pi: ExtensionAPI) {
 	// ── Session Start ──────────────────────────────────────────────────────
 	pi.on("session_start", async (_event, ctx) => {
 		clearInjectionState();
+		injectRootGuidance(ctx.cwd, pi);
 		reconstructTodoState(ctx);
 
 		// Restore persisted advisor model + effort from previous session
@@ -106,6 +107,7 @@ export default function (pi: ExtensionAPI) {
 	// ── Session Compact ────────────────────────────────────────────────────
 	pi.on("session_compact", async (_event, ctx) => {
 		clearInjectionState();
+		injectRootGuidance(ctx.cwd, pi);
 		reconstructTodoState(ctx);
 		todoOverlay?.update();
 	});
