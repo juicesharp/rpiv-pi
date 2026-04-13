@@ -1,8 +1,21 @@
 /**
- * Guidance injection — resolves and injects architecture.md guidance files.
+ * Guidance injection — resolves and injects subfolder guidance files.
  *
- * Pure logic + in-memory state. No ExtensionAPI interactions.
- * Called from index.ts tool_call handler.
+ * At each directory depth from project root down to the touched file's
+ * directory, picks the first existing of:
+ *   AGENTS.md > CLAUDE.md > .rpiv/guidance/<sub>/architecture.md
+ *
+ * Depth 0 (project root) skips AGENTS.md/CLAUDE.md because Pi's own
+ * resource-loader (loadContextFileFromDir at resource-loader.js:30-46)
+ * already loads <cwd>/AGENTS.md or <cwd>/CLAUDE.md into the system
+ * prompt's # Project Context block. Depth 0 still checks
+ * <cwd>/.rpiv/guidance/architecture.md — Pi's loader does not see that
+ * path.
+ *
+ * `resolveGuidance` is pure logic with no ExtensionAPI references
+ * (utility-module rule from extensions/rpiv-core/CLAUDE.md). Side
+ * effects (sendMessage, in-memory dedup Set) live in
+ * `handleToolCallGuidance` and `clearInjectionState`.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -10,16 +23,32 @@ import { dirname, relative, sep, isAbsolute, join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // ---------------------------------------------------------------------------
-// Guidance Resolution (ported from scripts/lib/resolver.js + inject-guidance.js)
+// Guidance Resolution
 // ---------------------------------------------------------------------------
 
+type GuidanceKind = "agents" | "claude" | "architecture";
+
+interface GuidanceFile {
+	/** Forward-slash-normalized path from project root — stable dedup key. */
+	relativePath: string;
+	absolutePath: string;
+	content: string;
+	kind: GuidanceKind;
+}
+
 /**
- * Resolve architecture.md guidance files for a given file path.
- * Walks from the file's directory up to project root, checking
- * .rpiv/guidance/{dir}/architecture.md at each level.
- * Returns files ordered root-first (general → specific).
+ * Resolve guidance files for a given file path.
+ *
+ * Walks from project root to the file's directory. At each depth, picks
+ * the first existing of AGENTS.md > CLAUDE.md > architecture.md (Pi's
+ * own per-dir precedence at resource-loader.js:30-46, extended with
+ * architecture.md as a third candidate). Depth 0 only checks
+ * architecture.md — Pi's loader already handles <cwd>/AGENTS.md and
+ * <cwd>/CLAUDE.md.
+ *
+ * Returns files root-first (general → specific), at most one per depth.
  */
-export function resolveGuidance(filePath: string, projectDir: string) {
+export function resolveGuidance(filePath: string, projectDir: string): GuidanceFile[] {
 	const fileDir = dirname(filePath);
 	const relativeDir = relative(projectDir, fileDir);
 
@@ -29,21 +58,37 @@ export function resolveGuidance(filePath: string, projectDir: string) {
 	}
 
 	const parts = relativeDir ? relativeDir.split(sep) : [];
-	const results: { relativePath: string; absolutePath: string; content: string }[] = [];
+	const results: GuidanceFile[] = [];
 
 	for (let depth = 0; depth <= parts.length; depth++) {
 		const subPath = parts.slice(0, depth).join(sep);
-		const guidanceRelative = subPath
-			? join(".rpiv", "guidance", subPath, "architecture.md")
-			: join(".rpiv", "guidance", "architecture.md");
-		const guidanceAbsolute = join(projectDir, guidanceRelative);
 
-		if (existsSync(guidanceAbsolute)) {
-			results.push({
-				relativePath: guidanceRelative.split(sep).join("/"),
-				absolutePath: guidanceAbsolute,
-				content: readFileSync(guidanceAbsolute, "utf-8"),
-			});
+		// Per-depth candidate ladder. First-match wins.
+		const candidates: Array<{ relative: string; kind: GuidanceKind }> = [];
+
+		// Depth 0: skip AGENTS/CLAUDE — Pi's loader handles <cwd> already.
+		if (depth > 0) {
+			candidates.push({ relative: join(subPath, "AGENTS.md"), kind: "agents" });
+			candidates.push({ relative: join(subPath, "CLAUDE.md"), kind: "claude" });
+		}
+		candidates.push({
+			relative: subPath
+				? join(".rpiv", "guidance", subPath, "architecture.md")
+				: join(".rpiv", "guidance", "architecture.md"),
+			kind: "architecture",
+		});
+
+		for (const candidate of candidates) {
+			const absolute = join(projectDir, candidate.relative);
+			if (existsSync(absolute)) {
+				results.push({
+					relativePath: candidate.relative.split(sep).join("/"),
+					absolutePath: absolute,
+					content: readFileSync(absolute, "utf-8"),
+					kind: candidate.kind,
+				});
+				break; // first-match wins at this depth
+			}
 		}
 	}
 
@@ -54,7 +99,7 @@ export function resolveGuidance(filePath: string, projectDir: string) {
 // Session State
 // ---------------------------------------------------------------------------
 
-/** In-memory set of injected guidance paths per session */
+/** In-memory set of injected guidance paths per session. */
 const injectedGuidance = new Set<string>();
 
 export function clearInjectionState() {
@@ -85,23 +130,39 @@ export function handleToolCallGuidance(
 	const newFiles = resolved.filter((g) => !injectedGuidance.has(g.relativePath));
 	if (newFiles.length === 0) return;
 
-	// Mark as injected
+	// Mark before sendMessage — idempotence > reliability.
 	for (const g of newFiles) {
 		injectedGuidance.add(g.relativePath);
 	}
 
-	// Build context and inject as a hidden message
-	const contextParts = newFiles.map((g) => {
-		const label =
-			g.relativePath
-				.replace(".rpiv/guidance/", "")
-				.replace(/\/?architecture\.md$/, "") || "root";
-		return `## Architecture Guidance: ${label}\n\n${g.content}`;
-	});
+	const contextParts = newFiles.map(
+		(g) => `## Project Guidance: ${formatLabel(g)}\n\n${g.content}`,
+	);
 
 	pi.sendMessage({
 		customType: "rpiv-guidance",
 		content: contextParts.join("\n\n---\n\n"),
 		display: false,
 	});
+}
+
+/**
+ * Format a guidance file's heading label.
+ *   extensions/rpiv-core/AGENTS.md          → "extensions/rpiv-core (AGENTS.md)"
+ *   scripts/CLAUDE.md                       → "scripts (CLAUDE.md)"
+ *   .rpiv/guidance/scripts/architecture.md  → "scripts (architecture.md)"
+ *   .rpiv/guidance/architecture.md          → "root (architecture.md)"
+ */
+function formatLabel(g: GuidanceFile): string {
+	if (g.kind === "architecture") {
+		const stripped = g.relativePath.replace(/^\.rpiv\/guidance\//, "");
+		const sub = stripped === "architecture.md"
+			? ""
+			: stripped.replace(/\/architecture\.md$/, "");
+		return `${sub || "root"} (architecture.md)`;
+	}
+	const fileName = g.kind === "agents" ? "AGENTS.md" : "CLAUDE.md";
+	const idx = g.relativePath.lastIndexOf("/");
+	const sub = idx > 0 ? g.relativePath.slice(0, idx) : "";
+	return `${sub || "root"} (${fileName})`;
 }

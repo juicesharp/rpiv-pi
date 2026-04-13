@@ -8,7 +8,7 @@ A Pi CLI plugin package that extends the Pi coding agent with TypeScript runtime
 rpiv-pi/
 ├── extensions/rpiv-core/   — Pi runtime extension: tools, commands, session hooks (TypeScript)
 ├── extensions/web-tools/   — web_search + web_fetch tools via Brave Search API (TypeScript)
-├── scripts/                — migrate.js CLI + Claude Code hooks delivery for .rpiv/guidance/
+├── scripts/                — migrate.js CLI for CLAUDE.md → .rpiv/guidance/ migration
 ├── agents/                 — Named subagent profiles dispatched by skills (Markdown)
 ├── skills/                 — User-invocable AI workflow skills (Markdown)
 └── thoughts/shared/        — Pipeline artifact store: questions/, research/, designs/, plans/, reviews/
@@ -41,10 +41,6 @@ rpiv-pi augments the Pi agent with a research-design-implement skill pipeline an
 </important>
 
 <important if="you are modifying guidance injection behavior">
-## Guidance Injection Paths
-Two delivery paths for `.rpiv/guidance/` shadow tree injection:
-- **Pi extension** (active): `extensions/rpiv-core/guidance.ts` — in-process, session-scoped `Set` deduplication; injected via `pi.sendMessage({ display: false })`
-- **Claude Code hooks** (alternate, not yet well battle-tested): `scripts/handlers/` — filesystem marker deduplication; injected via stdout `additionalContext`
-
-CLAUDE.md files in Claude Code are resolved automatically — no hooks needed for that format.
+## Guidance Injection
+`extensions/rpiv-core/guidance.ts` — single Pi delivery path. `pi.on("tool_call")` resolves per-depth at most one of `AGENTS.md > CLAUDE.md > .rpiv/guidance/<sub>/architecture.md` (depth 0 skips AGENTS/CLAUDE — Pi's own resource-loader handles `<cwd>` already). Injects each new file via `pi.sendMessage({ display: false })`; in-process `Set` dedups across the session; cleared on `session_start`/`session_compact`/`session_shutdown`.
 </important>
