@@ -10,6 +10,7 @@ status: complete
 questions_source: "thoughts/shared/questions/2026-04-13_15-33-01_extract-rpiv-core-tools-into-prerequisite-plugins.md"
 last_updated: 2026-04-13
 last_updated_by: Claude Code
+last_updated_note: "Added follow-up research for extracting Brave web-tools and removing pi-permission-system as a prerequisite"
 ---
 
 # Research: Assess extracting AskUserQuestion, Todos, and Advisor into separate prerequisite plugins
@@ -264,7 +265,14 @@ A: Hard cutover to `~/.config/rpiv-advisor/`. Users lose saved advisor-model con
 **Q (`thoughts/shared/research/2026-04-11_07-16-31_pi-subagents-alt-library.md:35-48`, `agents/*.md`): How should the research doc handle subagent inheritance of extracted plugins?**
 A: Non-issue for current agent definitions — grepping `agents/*.md` confirms zero references to `ask_user_question` / `todo` / `advisor`. Agents delegate via skills. rpiv-pi is hard-dependent on the three extracted plugins (can't run without them). Express the dependency via best-practice patterns surfaced by web research: `peerDependencies` in `package.json` + runtime check at `session_start` + `/rpiv-setup` hard-fail with actionable install commands (VS Code `extensionDependencies` semantics via Obsidian-style runtime enforcement, since no native Pi mechanism exists per pi-mono docs + issues #326/#645/#1831). Consider filing a FR against `badlogic/pi-mono` for a `pi.dependencies` manifest field.
 
-## Related Research
+**Q (`extensions/web-tools/index.ts:39`, `extensions/rpiv-core/templates/pi-permissions.jsonc:30-31`, `agents/web-search-researcher.md:1-4`): For extracted Brave web-tools, should config stay at `~/.config/rpiv-pi/web-tools.json` and should `pi-permission-system` remain a prerequisite?**
+A: No — plan to remove the `pi-permission-system` dependency entirely. Treat the extracted Brave plugin as owning its own config namespace (not `~/.config/rpiv-pi/web-tools.json`). That removes the need for permission-fragment design work for `web_search` / `web_fetch`; research should frame extraction around package install/runtime checks, agent ownership, and config migration only.
+
+## Follow-up Research 2026-04-13T17:00:00-04:00
+
+### Extracting Brave web-tools into an independent prerequisite plugin
+- `extensions/web-tools/index.ts:165-495` is already a self-contained extension boundary: it registers `web_search`, `web_fetch`, and `/web-search-config` without importing anything from `extensions/rpiv-core/`. Code extraction is therefore straightforward compared with `todo` or `advisor`.
+- The current coupling is package-level, not code-level. `package.json:7-10` exposes both `extensions/rpiv-core/` and `extensions/web-tools/` through one `
 - Questions source: `thoughts/shared/questions/2026-04-13_15-33-01_extract-rpiv-core-tools-into-prerequisite-plugins.md`
 - `thoughts/shared/research/2026-04-11_07-16-31_pi-subagents-alt-library.md`
 - `thoughts/shared/research/2026-04-11_17-27-55_advisor-strategy-pattern.md`
