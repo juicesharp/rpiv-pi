@@ -2,9 +2,22 @@
   "name": "@juicesharp/rpiv-pi",
   "version": "0.4.0",
   "description": "Skill-based development workflow for Pi — research, design, plan, implement, review",
-  "keywords": ["pi-package", "pi-extension"],
+  "keywords": ["pi-package", "pi-extension", "rpiv", "skills", "workflow"],
   "license": "MIT",
+  "author": "juicesharp",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juicesharp/rpiv-pi.git"
+  },
+  "homepage": "https://github.com/juicesharp/rpiv-pi#readme",
+  "bugs": {
+    "url": "https://github.com/juicesharp/rpiv-pi/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": ["extensions/", "skills/", "agents/", "scripts/", "README.md"],
   "pi": {
     "extensions": ["./extensions"],
     "skills": ["./skills"]

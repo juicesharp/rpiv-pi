@@ -7,7 +7,6 @@ A Pi CLI plugin package that extends the Pi coding agent with TypeScript runtime
 ```
 rpiv-pi/
 ├── extensions/rpiv-core/   — Pi runtime extension: tools, commands, session hooks (TypeScript)
-├── extensions/web-tools/   — web_search + web_fetch tools via Brave Search API (TypeScript)
 ├── scripts/                — migrate.js CLI for .rpiv/guidance/architecture.md → .rpiv/guidance/ migration
 ├── agents/                 — Named subagent profiles dispatched by skills (Markdown)
 ├── skills/                 — User-invocable AI workflow skills (Markdown)
