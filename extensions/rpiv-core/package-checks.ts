@@ -34,10 +34,6 @@ export function hasPiSubagentsInstalled(): boolean {
 	return readInstalledPackages().some((entry) => /@tintinweb\/pi-subagents/i.test(entry));
 }
 
-export function hasPiPermissionSystemInstalled(): boolean {
-	return readInstalledPackages().some((entry) => /pi-permission-system/i.test(entry));
-}
-
 export function hasRpivAskUserQuestionInstalled(): boolean {
 	return readInstalledPackages().some((entry) => /rpiv-ask-user-question/i.test(entry));
 }

@@ -27,7 +27,7 @@ Skill pipeline: `research-questions` → `research` → `design` → `write-plan
 | `/todos` | Show current todo list |
 | `/advisor` | Configure advisor model + effort level |
 | `/rpiv-update-agents` | Refresh `<cwd>/.pi/agents/` from bundled agent definitions |
-| `/rpiv-setup` | Seed `~/.pi/agent/pi-permissions.jsonc` if absent |
+| `/rpiv-setup` | Install missing sibling `@juicesharp/rpiv-*` and `@tintinweb/pi-subagents` plugins |
 
 # Business Context
 

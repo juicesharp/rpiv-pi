@@ -20,8 +20,7 @@ todo.ts                   — todo tool + /todos command + pure reducer + getTod
 advisor.ts                — advisor tool + /advisor command + config persistence (~/.config/rpiv-pi/)
 todo-overlay.ts           — TodoOverlay: persistent TUI widget above editor input
 guidance.ts               — resolveGuidance() + handleToolCallGuidance(); session-scoped dedup Set
-agents.ts, permissions.ts, package-checks.ts  — pure utilities; no ExtensionAPI; filesystem/OS only
-templates/                — pi-permissions.jsonc seeded to ~/.pi/agent/ once on first run
+agents.ts, package-checks.ts  — pure utilities; no ExtensionAPI; filesystem/OS only
 ```
 
 ## Tool Registration (`pi.registerTool`)
@@ -29,7 +28,7 @@ templates/                — pi-permissions.jsonc seeded to ~/.pi/agent/ once o
 ```typescript
 export function registerMyTool(pi: ExtensionAPI): void {
     pi.registerTool({
-        name: "my_tool",                         // snake_case; must match pi-permissions.jsonc entry
+        name: "my_tool",                         // snake_case
         label: "My Tool",
         description: "Full description for tool picker UI.",
         promptSnippet: "Short imperative (≤15 words)",
@@ -72,7 +71,7 @@ export function reconstructMyState(ctx: any): void {
 
 ## Architectural Boundaries
 - **NO business logic in index.ts**: orchestration only — all logic in imported modules
-- **NO ExtensionAPI in utility modules**: `agents.ts`, `permissions.ts`, `package-checks.ts`, `guidance.ts` are `pi`-free
+- **NO ExtensionAPI in utility modules**: `agents.ts`, `package-checks.ts`, `guidance.ts` are `pi`-free
 - **NO state mutation in tool_execution_end**: branch is stale; call `overlay?.update()` only, never `reconstruct*State()`
 - **NO advisor in active tools when model unset**: stripped each `before_agent_start` via `pi.setActiveTools()`
 
@@ -82,7 +81,6 @@ export function reconstructMyState(ctx: any): void {
 2. Define `Type.Object({...})` schema and a `MyToolDetails` interface for the `details` envelope
 3. If stateful: add module-level `let items`, write a pure `applyMutation()` reducer, export `reconstructMyState(ctx)`
 4. In `index.ts`: import + call `registerMyTool(pi)` in the registration section; call `reconstructMyState(ctx)` in `session_start`, `session_compact`, `session_tree` handlers
-5. Add the tool name to `templates/pi-permissions.jsonc` under `tools` — use `"allow"` for safe read-only tools; leave at default `"ask"` for tools with side effects or external API calls
 </important>
 
 <important if="you are adding a new slash command to this extension">

@@ -6,7 +6,6 @@
  * - Git context injection (replaces !`git ...` shell evaluation in skills)
  * - thoughts/ directory scaffolding on session start
  * - Bundled-agent auto-copy into <cwd>/.pi/agents/
- * - active_agent seed workaround for pi-permission-system@0.4.1
  * - Aggregated session_start warning for missing sibling plugins
  * - /rpiv-update-agents, /rpiv-setup slash commands
  *
@@ -22,7 +21,6 @@ import { clearInjectionState, handleToolCallGuidance, injectRootGuidance } from 
 import { copyBundledAgents } from "./agents.js";
 import {
 	hasPiSubagentsInstalled,
-	hasPiPermissionSystemInstalled,
 	hasRpivAskUserQuestionInstalled,
 	hasRpivTodoInstalled,
 	hasRpivAdvisorInstalled,
@@ -34,17 +32,6 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		clearInjectionState();
 		injectRootGuidance(ctx.cwd, pi);
-
-		// Seed a root `active_agent` session entry so pi-permission-system's
-		// input handler can resolve the root context on the very first user
-		// input. Without this, `/skill:<name>` as the first message of a fresh
-		// session is blocked with "active agent context is unavailable" —
-		// pi-permission-system@0.4.1 calls resolveAgentName(ctx) without
-		// systemPrompt in its input handler, so it only checks session entries
-		// and a stale cache, both empty before before_agent_start has fired.
-		if (hasPiPermissionSystemInstalled()) {
-			pi.appendEntry("active_agent", { name: "general-purpose" });
-		}
 
 		// Scaffold thoughts/ directory structure (artifact chain)
 		const dirs = [
