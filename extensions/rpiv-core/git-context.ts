@@ -2,8 +2,10 @@
  * Cached branch + short commit. Injected into the transcript once at
  * session_start, re-injected on session_compact (transcript cleared) and
  * only when the cached value changes (e.g. after a mutating git command).
- * Single `git rev-parse` call is worktree-safe — git itself resolves
- * gitdir redirection.
+ * Two parallel `git rev-parse` calls — one call can't combine
+ * `--abbrev-ref` and `--short` cleanly because the `--abbrev-ref` mode
+ * persists to subsequent revs. git itself resolves worktree gitdir
+ * redirection, so either form is worktree-safe.
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -30,12 +32,12 @@ export function clearGitContextCache(): void {
 // Detached HEAD emits literal "HEAD" for --abbrev-ref; remap so frontmatter is meaningful.
 async function loadGitContext(pi: ExtensionAPI): Promise<GitContext | null> {
 	try {
-		const r = await pi.exec(
-			"git",
-			["rev-parse", "--abbrev-ref", "HEAD", "--short", "HEAD"],
-			{ timeout: 5000 },
-		);
-		const [rawBranch = "", commit = ""] = r.stdout.trim().split("\n");
+		const [branchRes, commitRes] = await Promise.all([
+			pi.exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], { timeout: 5000 }),
+			pi.exec("git", ["rev-parse", "--short", "HEAD"], { timeout: 5000 }),
+		]);
+		const rawBranch = branchRes.stdout.trim();
+		const commit = commitRes.stdout.trim();
 		if (!rawBranch && !commit) return null;
 		const branch = rawBranch === "HEAD" ? "detached" : rawBranch;
 		let user = "";
