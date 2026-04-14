@@ -24,7 +24,7 @@ import {
 	resetInjectedMarker,
 	takeGitContextIfChanged,
 } from "./git-context.js";
-import { copyBundledAgents } from "./agents.js";
+import { syncBundledAgents } from "./agents.js";
 import {
 	hasPiSubagentsInstalled,
 	hasRpivAskUserQuestionInstalled,
@@ -57,13 +57,30 @@ export default function (pi: ExtensionAPI) {
 			pi.sendMessage({ customType: "rpiv-git-context", content: gitMsg, display: false });
 		}
 
-		// Auto-copy bundled agents into <cwd>/.pi/agents/
-		const agentResult = copyBundledAgents(ctx.cwd, false);
-		if (ctx.hasUI && agentResult.copied.length > 0) {
-			ctx.ui.notify(
-				`Copied ${agentResult.copied.length} rpiv-pi agent(s) to .pi/agents/`,
-				"info",
-			);
+		// Sync bundled agents into <cwd>/.pi/agents/
+		// Detect-only mode: adds new files, detects drift, does NOT overwrite or remove.
+		const agentResult = syncBundledAgents(ctx.cwd, false);
+		if (ctx.hasUI) {
+			if (agentResult.added.length > 0) {
+				ctx.ui.notify(
+					`Copied ${agentResult.added.length} rpiv-pi agent(s) to .pi/agents/`,
+					"info",
+				);
+			}
+			const driftCount = agentResult.pendingUpdate.length + agentResult.pendingRemove.length;
+			if (driftCount > 0) {
+				const parts: string[] = [];
+				if (agentResult.pendingUpdate.length > 0) {
+					parts.push(`${agentResult.pendingUpdate.length} outdated`);
+				}
+				if (agentResult.pendingRemove.length > 0) {
+					parts.push(`${agentResult.pendingRemove.length} removed from bundle`);
+				}
+				ctx.ui.notify(
+					`${parts.join(", ")} agent(s). Run /rpiv-update-agents to sync.`,
+					"info",
+				);
+			}
 		}
 
 		// Aggregated warning for any missing sibling plugins
@@ -121,18 +138,34 @@ export default function (pi: ExtensionAPI) {
 
 	// ── /rpiv-update-agents Command ────────────────────────────────────────
 	pi.registerCommand("rpiv-update-agents", {
-		description: "Re-copy rpiv-pi's bundled agents into .pi/agents/, overwriting local edits",
+		description: "Sync rpiv-pi bundled agents into .pi/agents/: add new, update changed, remove stale",
 		handler: async (_args, ctx) => {
-			const result = copyBundledAgents(ctx.cwd, true);
+			const result = syncBundledAgents(ctx.cwd, true);
 			if (!ctx.hasUI) return;
-			if (result.copied.length === 0) {
-				ctx.ui.notify("No bundled agents found to copy", "warning");
+
+			const totalSynced = result.added.length + result.updated.length + result.removed.length;
+			if (totalSynced === 0 && result.errors.length === 0) {
+				ctx.ui.notify("All agents already up-to-date.", "info");
 				return;
 			}
-			ctx.ui.notify(
-				`Refreshed ${result.copied.length} agent(s) in .pi/agents/: ${result.copied.join(", ")}`,
-				"info",
-			);
+
+			const parts: string[] = [];
+			if (result.added.length > 0) parts.push(`${result.added.length} added`);
+			if (result.updated.length > 0) parts.push(`${result.updated.length} updated`);
+			if (result.removed.length > 0) parts.push(`${result.removed.length} removed`);
+
+			const summary = parts.length > 0
+				? `Synced agents: ${parts.join(", ")}.`
+				: "No changes needed.";
+
+			if (result.errors.length > 0) {
+				ctx.ui.notify(
+					`${summary} ${result.errors.length} error(s): ${result.errors.map((e) => e.message).join("; ")}`,
+					"warning",
+				);
+			} else {
+				ctx.ui.notify(summary, "info");
+			}
 		},
 	});
 
