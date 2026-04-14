@@ -82,8 +82,8 @@ Then wait for the user's review request.
      - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
      - [scope]: Brief kebab-case description of what was reviewed
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Determine the current git branch and short commit hash via `git` (fall back to "no-branch" / "no-commit" if not a git repo)
-   - Reviewer: Use "Claude Code"
+   - Use the git branch and commit from the git context injected at the start of the session (or run `git branch --show-current` / `git rev-parse --short HEAD` directly); falls back to "no-branch" / "no-commit" if not a git repo
+   - Reviewer: use the User from the git context injected at the start of the session (fallback: "unknown")
    - If metadata unavailable: use "unknown" for commit/branch
 
 6. **Generate review document:**

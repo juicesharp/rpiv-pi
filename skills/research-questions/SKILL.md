@@ -173,8 +173,8 @@ Present the generated questions to the developer for review.
      - YYYY-MM-DD_HH-MM-SS: Current date and time
      - topic: Brief kebab-case description
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Determine branch and commit by running `git branch --show-current` and `git rev-parse --short HEAD`
-   - Researcher: "Claude Code"
+   - Use the git branch and commit from the git context injected at the start of the session (or run `git branch --show-current` / `git rev-parse --short HEAD` directly)
+   - Researcher: use the User from the git context injected at the start of the session (fallback: "unknown")
    - If metadata unavailable: use "unknown" for commit/branch
 
 2. **Write the artifact** using this template:
@@ -182,7 +182,7 @@ Present the generated questions to the developer for review.
    ```markdown
    ---
    date: [Current date and time with timezone in ISO format]
-   researcher: Claude Code
+   researcher: [User from injected git context]
    git_commit: [Current commit hash]
    branch: [Current branch name]
    repository: [Repository name]
@@ -190,7 +190,7 @@ Present the generated questions to the developer for review.
    tags: [research-questions, relevant-component-names]
    status: complete
    last_updated: [Current date in YYYY-MM-DD format]
-   last_updated_by: Claude Code
+   last_updated_by: [User from injected git context]
    ---
 
    # Research Questions: [Topic]

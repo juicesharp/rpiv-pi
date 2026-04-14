@@ -66,8 +66,8 @@ Then wait for the user's request.
      - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
      - [topic]: Brief kebab-case description
    - Repository name: from git root basename, or current directory basename if not a git repo
-   - Determine branch and commit by running `git branch --show-current` and `git rev-parse --short HEAD`
-   - Researcher: Use "Claude Code"
+   - Use the git branch and commit from the git context injected at the start of the session (or run `git branch --show-current` / `git rev-parse --short HEAD` directly)
+   - Researcher: use the User from the git context injected at the start of the session (fallback: "unknown")
    - If metadata unavailable: use "unknown" for commit/branch
 
 6. **Generate solutions document:**

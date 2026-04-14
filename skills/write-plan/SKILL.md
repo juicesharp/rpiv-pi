@@ -87,7 +87,7 @@ After structure approval, write the plan **incrementally** — skeleton first, t
 ```markdown
 ---
 date: [Current date and time with timezone in ISO format]
-planner: Claude Code
+planner: [User from injected git context]
 git_commit: [Current commit hash]
 branch: [Current branch name]
 repository: [Repository name]
@@ -96,7 +96,7 @@ tags: [plan, relevant-component-names]
 status: ready
 design_source: "[path to design artifact]"
 last_updated: [Current date in YYYY-MM-DD format]
-last_updated_by: Claude Code
+last_updated_by: [User from injected git context]
 ---
 
 # [Feature/Task Name] Implementation Plan

@@ -206,7 +206,7 @@ After the design summary is confirmed, decompose the feature into vertical slice
 3. **Confirm decomposition** using the `ask_user_question` tool. Question: "[N] slices for [feature]. Slice 1: [name] (foundation). Slices 2-N: [brief]. Approve decomposition?". Header: "Slices". Options: "Approve (Recommended)" (Proceed to slice-by-slice code generation); "Adjust slices" (Reorder, merge, or split slices before generating); "Change scope" (Add or remove files from the decomposition).
 
 4. **Create skeleton artifact** — immediately after decomposition is approved:
-   - Determine metadata: filename `thoughts/shared/designs/YYYY-MM-DD_HH-MM-SS_topic.md`, repository name from git root, current git branch and short commit hash (fall back to "no-branch" / "no-commit" if not a git repo), designer "Claude Code"
+   - Determine metadata: filename `thoughts/shared/designs/YYYY-MM-DD_HH-MM-SS_topic.md`, repository name from git root, branch and commit from the git context injected at the start of the session (fallbacks: "no-branch" / "no-commit"), designer from the injected User (fallback: "unknown")
    - Write skeleton using the Write tool with `status: in-progress` in frontmatter
    - **Include all prose sections filled** from Steps 1-5: Summary, Requirements, Current State Analysis, Scope, Decisions, Desired End State, File Map, Ordering Constraints, Verification Notes, Performance Considerations, Migration Notes, Pattern References, Developer Context, References
    - **Architecture section**: one `### path/to/file.ext — NEW/MODIFY` heading per file from the decomposition, with empty code fences as placeholders
@@ -332,7 +332,7 @@ The artifact was created as a skeleton in Step 6 and filled progressively in Ste
 3. **Update frontmatter** via Edit:
    - Set `status: complete`
    - Update `last_updated` to current date
-   - Update `last_updated_by` to "Claude Code"
+   - Update `last_updated_by` to the User from the injected git context (fallback: "unknown")
 
 4. **Verify template completeness**: Ensure all 17 sections from the template reference in Step 6 are present and filled. Edit to fix any gaps.
 
