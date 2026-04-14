@@ -20,7 +20,7 @@ todo.ts                   — todo tool + /todos command + pure reducer + getTod
 advisor.ts                — advisor tool + /advisor command + config persistence (~/.config/rpiv-pi/)
 todo-overlay.ts           — TodoOverlay: persistent TUI widget above editor input
 guidance.ts               — resolveGuidance() + handleToolCallGuidance(); session-scoped dedup Set
-agents.ts, package-checks.ts  — pure utilities; no ExtensionAPI; filesystem/OS only
+agents.ts, package-checks.ts  — pure utilities; no ExtensionAPI; filesystem/OS only. agents.ts provides syncBundledAgents() with manifest-based add/update/remove detection
 ```
 
 ## Tool Registration (`pi.registerTool`)

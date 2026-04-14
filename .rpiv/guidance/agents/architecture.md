@@ -3,7 +3,7 @@
 ## Responsibility
 Named subagent profile library — isolated, single-purpose LLM workers dispatched by skills via the `Agent` tool. Each performs one narrow task (locate, analyze, connect, or fetch externally) and returns structured text. Agents never write files, dispatch other agents, or modify state.
 
-At session start, `extensions/rpiv-core/agents.ts` auto-copies all `.md` files here to `<cwd>/.pi/agents/` (skip-if-exists). Use `/rpiv-update-agents` to force-refresh the working copies.
+At session start, `extensions/rpiv-core/agents.ts` syncs bundled `.md` files to `<cwd>/.pi/agents/` — adding new files and detecting outdated or removed agents (detect-only, no overwrite). Use `/rpiv-update-agents` to apply full sync: add new, update changed, remove stale managed files.
 
 ## Dependencies
 - **`@tintinweb/pi-subagents`**: provides the `Agent` tool and subagent dispatch runtime; without it, skills fall back silently to `general-purpose`
@@ -72,5 +72,5 @@ Remember: You're a [identity noun]. [One sentence on what success looks like for
 5. Include `## What NOT to Do` and a closing `Remember:` sentence in every agent
 6. Output Format section: one fenced block with realistic filled-in example; prefix with `CRITICAL: Use EXACTLY this format.` if downstream code parses the output
 7. If the agent depends on external state (e.g., git), add a `## Pre-flight` check with an explicit fallback output block
-8. The file is auto-copied to `<cwd>/.pi/agents/` at session start — no registration step needed
+8. The file is auto-synced to `<cwd>/.pi/agents/` at session start — no registration step needed. `/rpiv-update-agents` applies full sync including new agents
 </important>

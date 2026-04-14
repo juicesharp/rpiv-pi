@@ -37,6 +37,7 @@ pi install npm:@juicesharp/rpiv-pi
 
 On first session start, rpiv-pi automatically:
 - Copies agent profiles to `<cwd>/.pi/agents/`
+- Detects outdated or removed agents on subsequent starts
 - Scaffolds `thoughts/shared/` directories for pipeline artifacts
 - Shows a warning if any sibling plugins are missing
 
@@ -105,7 +106,7 @@ Invoke via `/skill:<name>` from inside a Pi session.
 | Command | Description |
 |---|---|
 | `/rpiv-setup` | Install all sibling plugins in one go |
-| `/rpiv-update-agents` | Refresh agent profiles from bundled defaults |
+| `/rpiv-update-agents` | Sync rpiv agent profiles: add new, update changed, remove stale |
 | `/advisor` | Configure advisor model and reasoning effort |
 | `/todos` | Show current todo list |
 | `/web-search-config` | Set Brave Search API key |
@@ -143,7 +144,7 @@ Pi discovers extensions via `"extensions": ["./extensions"]` and skills via `"sk
 - **Web search** — run `/web-search-config` to set the Brave Search API key, or set the `BRAVE_SEARCH_API_KEY` environment variable
 - **Advisor** — run `/advisor` to select a reviewer model and reasoning effort
 - **Agent concurrency** — `@tintinweb/pi-subagents` defaults to 4 concurrent agents; raise via `/agents → Settings → Max concurrency → 48` if skills stall on wide fan-outs
-- **Agent profiles** — editable at `<cwd>/.pi/agents/`; refresh from bundled defaults with `/rpiv-update-agents`
+- **Agent profiles** — editable at `<cwd>/.pi/agents/`; sync from bundled defaults with `/rpiv-update-agents` (overwrites rpiv-managed files, preserves your custom agents)
 
 ## Upgrading from 0.3.x
 
