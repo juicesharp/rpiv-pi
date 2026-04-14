@@ -7,9 +7,46 @@ Skill-based development workflow for [Pi Agent](https://github.com/badlogic/pi-m
 
 ## Prerequisites
 
-- **[Pi Agent](https://github.com/badlogic/pi-mono)** — the `pi` command must be available
 - **Node.js** — required by Pi Agent
-- **git** *(recommended)* — rpiv-pi works without it, but branch and commit context won't be available to skills
+- **[Pi Agent](https://github.com/badlogic/pi-mono)** — install globally so the `pi` command is available:
+
+  ```bash
+  npm install -g @mariozechner/pi-coding-agent
+  ```
+
+- **Model provider** *(first-time Pi Agent users only — skip if `/login` already works or `~/.pi/agent/models.json` is configured)*. Pick one:
+
+  - **Subscription login** — start Pi Agent and run `/login` to authenticate with Anthropic Claude Pro/Max, ChatGPT Plus/Pro, GitHub Copilot, or Gemini.
+  - **BYOK (API key)** — edit `~/.pi/agent/models.json` and add a provider entry with `baseUrl`, `api`, `apiKey`, and `models[]`. Example (z.ai GLM coding plan):
+
+    ```json
+    {
+      "providers": {
+        "zai": {
+          "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+          "api": "openai-completions",
+          "apiKey": "XXXXXXXXX",
+          "compat": {
+            "supportsDeveloperRole": false,
+            "thinkingFormat": "zai"
+          },
+          "models": [
+            {
+              "id": "glm-5.1",
+              "name": "glm-5.1 [coding plan]",
+              "reasoning": true,
+              "input": ["text"],
+              "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+              "contextWindow": 204800,
+              "maxTokens": 131072
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+- **git** *(recommended)* — rpiv-pi works without it, but branch and commit context won't be available to skills.
 
 ## Quick Start
 
@@ -19,47 +56,15 @@ Skill-based development workflow for [Pi Agent](https://github.com/badlogic/pi-m
 pi install npm:@juicesharp/rpiv-pi
 ```
 
-2. Configure a model provider (pick one):
-
-   - **Subscription login** — start Pi Agent and run `/login` to authenticate with Anthropic Claude Pro/Max, ChatGPT Plus/Pro, GitHub Copilot, or Gemini.
-   - **BYOK (API key)** — edit `~/.pi/agent/models.json` and add a provider entry with `baseUrl`, `api`, `apiKey`, and `models[]`. Example (z.ai GLM coding plan):
-
-     ```json
-     {
-       "providers": {
-         "zai": {
-           "baseUrl": "https://api.z.ai/api/coding/paas/v4",
-           "api": "openai-completions",
-           "apiKey": "XXXXXXXXX",
-           "compat": {
-             "supportsDeveloperRole": false,
-             "thinkingFormat": "zai"
-           },
-           "models": [
-             {
-               "id": "glm-5.1",
-               "name": "glm-5.1 [coding plan]",
-               "reasoning": true,
-               "input": ["text"],
-               "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
-               "contextWindow": 204800,
-               "maxTokens": 131072
-             }
-           ]
-         }
-       }
-     }
-     ```
-
-3. Start a Pi Agent session and install sibling plugins:
+2. Start a Pi Agent session and install sibling plugins:
 
 ```
 /rpiv-setup
 ```
 
-4. Restart your Pi Agent session.
+3. Restart your Pi Agent session.
 
-5. *(Optional)* Configure web search:
+4. *(Optional)* Configure web search:
 
 ```
 /web-search-config
