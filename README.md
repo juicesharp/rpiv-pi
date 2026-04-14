@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@juicesharp/rpiv-pi.svg)](https://www.npmjs.com/package/@juicesharp/rpiv-pi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Skill-based development workflow for [Pi](https://github.com/badlogic/pi-mono) — research, design, plan, implement, review. rpiv-pi extends the Pi coding agent with a pipeline of chained AI skills, named subagents for parallel analysis, and session lifecycle hooks for automatic context injection.
+Skill-based development workflow for [Pi](https://github.com/badlogic/pi-mono) — research, design, plan, implement, validate. rpiv-pi extends the Pi coding agent with a pipeline of chained AI skills, named subagents for parallel analysis, and session lifecycle hooks for automatic context injection.
 
 ## Prerequisites
 
