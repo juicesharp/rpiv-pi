@@ -1,16 +1,16 @@
 ---
 name: research
-description: Answer structured research questions via targeted parallel analysis agents. Consumes question artifacts from research-questions. Produces research documents in thoughts/shared/research/. Use as Phase 2 of the two-phase research pipeline — always requires a questions artifact.
-argument-hint: [path to research-questions artifact]
+description: Answer structured research questions via targeted parallel analysis agents. Consumes question artifacts from discover. Produces research documents in thoughts/shared/research/. Second stage of the research pipeline — always requires a questions artifact.
+argument-hint: [path to discover artifact]
 ---
 
 ## Questions Source
 
-If the user has not already provided a specific research-questions artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
+If the user has not already provided a specific discover artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
 
 # Research
 
-You are tasked with answering structured research questions by spawning targeted analysis agents and synthesizing their findings into a comprehensive research document. This skill consumes questions artifacts produced by the `research-questions` skill.
+You are tasked with answering structured research questions by spawning targeted analysis agents and synthesizing their findings into a comprehensive research document. This skill consumes questions artifacts produced by the `discover` skill.
 
 ## Step 1: Read Questions Artifact
 
@@ -26,8 +26,8 @@ You are tasked with answering structured research questions by spawning targeted
    I'll answer research questions from a questions artifact. Please provide the path:
    `/skill:research thoughts/shared/questions/YYYY-MM-DD_HH-MM-SS_topic.md`
 
-   This skill requires a questions artifact from research-questions.
-   There is no standalone path — run /skill:research-questions first to produce a questions artifact.
+   This skill requires a questions artifact from discover.
+   There is no standalone path — run /skill:discover first to produce a questions artifact.
    ```
    Then wait for input.
 
@@ -288,10 +288,10 @@ When ready:
 
 ## Important Notes
 
-- **Analysis only**: This skill answers questions. It does NOT discover what to ask — that's research-questions' job.
-- **Always chained**: This skill requires a questions artifact from research-questions. There is no standalone path.
+- **Analysis only**: This skill answers questions. It does NOT discover what to ask — that's discover's job.
+- **Always chained**: This skill requires a questions artifact from discover. There is no standalone path.
 - **Grouped dispatch**: Related questions are batched per agent based on file overlap. Default agent: codebase-analyzer. This reduces token waste from redundant file reads and lets agents build cross-question context.
-- **Downstream compatible**: Research documents feed directly into design and write-plan — the same Code References / Integration Points / Architecture Insights sections they expect.
+- **Downstream compatible**: Research documents feed directly into design and plan — the same Code References / Integration Points / Architecture Insights sections they expect.
 - **File reading**: Always read the questions artifact FULLY (no limit/offset) before dispatching agents
 - **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read the questions artifact first (Step 1)

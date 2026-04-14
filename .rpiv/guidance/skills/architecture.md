@@ -9,13 +9,13 @@ User-invocable AI workflow definitions. Each `SKILL.md` is a structured prompt i
 
 ## Consumers
 - **Users**: `/skill:<name>` invokes the matching skill
-- **Pipeline**: several skills require upstream artifacts — `research` requires `research-questions` output; `design` requires `research`; `write-plan` requires `design`; `implement-plan` requires `write-plan`
+- **Pipeline**: several skills require upstream artifacts — `research` requires `discover` output; `design` requires `research`; `plan` requires `design`; `implement` requires `plan`
 
 ## Module Structure
 ```
 commit/, code-review/                         — Plain skills: SKILL.md only; no external files
-research/, research-questions/, research-solutions/
-design/, write-plan/, iterate-plan/, implement-plan/, validate-plan/
+research/, discover/, explore/
+design/, plan/, revise/, implement/, validate/
 create-handoff/, resume-handoff/, migrate-to-guidance/
 annotate-guidance/, annotate-inline/          — SKILL.md + templates/ + examples/
 outline-test-cases/, write-test-cases/        — SKILL.md + templates/ + examples/
@@ -29,7 +29,7 @@ name: my-skill            # kebab-case; matches folder name; maps to /skill:my-s
 description: "What it does. Use when [trigger]."
 argument-hint: "[what the user passes]"
 allowed-tools: Bash(git *), Read, Glob, Grep   # omit entirely to inherit all tools + Agent
-# disable-model-invocation: true               # rare — implement-plan, create-handoff only
+# disable-model-invocation: true               # rare — implement, create-handoff only
 ---
 ```
 

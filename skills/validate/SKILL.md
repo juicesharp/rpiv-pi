@@ -1,5 +1,5 @@
 ---
-name: validate-plan
+name: validate
 description: Verify that an implementation plan was correctly executed. Runs success criteria checks and generates validation reports. Use after implementation is complete.
 argument-hint: [plan-path]
 allowed-tools: Read, Bash(git *), Bash(make *), Glob, Grep, Agent
@@ -166,9 +166,9 @@ Always verify:
 ## Relationship to Other Skills
 
 Recommended workflow:
-1. `/skill:implement-plan` - Execute the implementation
+1. `/skill:implement` - Execute the implementation
 2. `/skill:commit` - Create atomic commits for changes
-3. `/skill:validate-plan` - Verify implementation correctness
+3. `/skill:validate` - Verify implementation correctness
 
 The validation works best after commits are made, as it can analyze the git history to understand what was implemented.
 

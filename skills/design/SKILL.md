@@ -1,12 +1,12 @@
 ---
 name: design
-description: Design features through iterative vertical-slice decomposition and progressive code generation with developer micro-checkpoints. For complex multi-component features touching 6+ files across multiple layers. Produces design artifacts in thoughts/shared/designs/. Always requires a research artifact from research-questions → research, or a solutions artifact from research-solutions.
+description: Design features through iterative vertical-slice decomposition and progressive code generation with developer micro-checkpoints. For complex multi-component features touching 6+ files across multiple layers. Produces design artifacts in thoughts/shared/designs/. Always requires a research artifact from discover → research, or a solutions artifact from explore.
 argument-hint: [research artifact path]
 ---
 
 # Design
 
-You are tasked with designing how code will be shaped for a feature or change. This iterative variant decomposes features into vertical slices and generates code slice-by-slice with developer micro-checkpoints between slices. The design artifact feeds directly into write-plan, which sequences it into phases.
+You are tasked with designing how code will be shaped for a feature or change. This iterative variant decomposes features into vertical slices and generates code slice-by-slice with developer micro-checkpoints between slices. The design artifact feeds directly into plan, which sequences it into phases.
 
 **How it works**:
 - Read input and key source files into context (Step 1)
@@ -20,7 +20,7 @@ You are tasked with designing how code will be shaped for a feature or change. T
 - Finalize the design artifact (Step 9)
 - Review and iterate with the developer (Step 10)
 
-The final artifact is write-plan-compatible.
+The final artifact is plan-compatible.
 
 ## Step 1: Input Handling
 
@@ -34,15 +34,15 @@ When this command is invoked:
    - **Read the key source files from Code References** into the main context — especially hooks, shared utilities, and integration points the design will depend on. Read them FULLY. This ensures you have complete understanding before proceeding.
    - These become starting context — no need to re-discover what exists
    - Research Developer Context Q/As = inherited decisions (record in Decisions, never re-ask); Open Questions = starting ambiguity queue, filtered by dimension in Step 3
-   - If a research-questions artifact is also provided, read it for additional discovery context
+   - If a discover artifact is also provided, read it for additional discovery context
 
    **No arguments provided**:
    ```
    I'll design a feature iteratively from a research artifact. Please provide:
 
-   `/skill:design [research artifact] [research-questions] [task description]`
+   `/skill:design [research artifact] [discover] [task description]`
 
-   Research artifact is required. Research-questions and task description are optional, in any order.
+   Research artifact is required. Discover and task description are optional, in any order.
    ```
    Then wait for input.
 
@@ -82,7 +82,7 @@ This is NOT a discovery sweep. Focus on DEPTH (how things work, what patterns to
 
 ## Step 3: Identify Ambiguities — Dimension Sweep
 
-Walk Step 2 findings, inherited research Q/As, and carried Open Questions through six architectural dimensions that map 1:1 to `write-plan` extract sections — the sweep guarantees downstream completeness. Add **migration** as a seventh dimension only if the feature changes persisted schema.
+Walk Step 2 findings, inherited research Q/As, and carried Open Questions through six architectural dimensions that map 1:1 to `plan` extract sections — the sweep guarantees downstream completeness. Add **migration** as a seventh dimension only if the feature changes persisted schema.
 
 - **Data model** — types, schemas, entities
 - **API surface** — signatures, exports, routes
@@ -226,12 +226,12 @@ After the design summary is confirmed, decompose the feature into vertical slice
    - **## Desired End State**: Usage examples showing the feature in use from a consumer's perspective — concrete code, not prose.
    - **## File Map**: `path/to/file.ext  # NEW/MODIFY — purpose` per line.
    - **## Ordering Constraints**: What must come before what. What can run in parallel.
-   - **## Verification Notes**: Carry forward from research — known risks, build/test warnings, precedent lessons. Format as verifiable checks (commands, grep patterns, visual inspection). write-plan converts these to success criteria.
+   - **## Verification Notes**: Carry forward from research — known risks, build/test warnings, precedent lessons. Format as verifiable checks (commands, grep patterns, visual inspection). plan converts these to success criteria.
    - **## Performance Considerations**: Any performance implications or optimizations.
    - **## Migration Notes**: If applicable — existing data, schema changes, rollback strategy, backwards compatibility. Empty if not applicable.
    - **## Pattern References**: `path/to/similar.ext:line-range` — what pattern to follow and why.
    - **## Developer Context**: Record questions exactly as asked during checkpoint, including `file:line` evidence. For iterative variant: also record micro-checkpoint interactions from Step 7c.
-   - **## Design History**: Slice approval/revision log. `- Slice N: [name] — pending/approved as generated/revised: [what changed]`. write-plan ignores this section.
+   - **## Design History**: Slice approval/revision log. `- Slice N: [name] — pending/approved as generated/revised: [what changed]`. plan ignores this section.
    - **## References**: Research artifacts, tickets, similar implementations.
 
    **Architecture format in skeleton**:
@@ -255,7 +255,7 @@ Generate complete, copy-pasteable code for every file in this slice — but **ho
 
 If additional context is needed, spawn a targeted **codebase-analyzer** agent.
 
-No pseudocode, no TODOs, no placeholders — the code must be copy-pasteable by implement-plan.
+No pseudocode, no TODOs, no placeholders — the code must be copy-pasteable by implement.
 
 **Context grounding** (after slice 2): Before generating, re-read the artifact's Architecture section for files this slice touches. The artifact is the source of truth — generate code that extends what's already there, not what you remember from conversation.
 
@@ -338,7 +338,7 @@ The artifact was created as a skeleton in Step 6 and filled progressively in Ste
 
 5. **Architecture format reminder**:
    - **NEW files**: `### path/to/file.ext — NEW` + one-line purpose + full implementation code block
-   - **MODIFY files**: `### path/to/file.ext:line-range — MODIFY` + code block with only the modified/added code (no "Current" block — the original is on disk, implement-plan reads it)
+   - **MODIFY files**: `### path/to/file.ext:line-range — MODIFY` + code block with only the modified/added code (no "Current" block — the original is on disk, implement reads it)
 
 ## Step 10: Review & Iterate
 
@@ -355,7 +355,7 @@ The artifact was created as a skeleton in Step 6 and filled progressively in Ste
    - Does the code match what you envision?
    - Any missing integration points or edge cases?
 
-   When ready, run `/skill:write-plan thoughts/shared/designs/[filename].md` to sequence into phases.
+   When ready, run `/skill:plan thoughts/shared/designs/[filename].md` to sequence into phases.
    ```
 
 2. **Handle follow-up changes**:
@@ -371,11 +371,11 @@ The artifact was created as a skeleton in Step 6 and filled progressively in Ste
 
 2. **Be Interactive**: Don't produce the full design in one shot. Resolve ambiguities through the checkpoint first, get buy-in on the approach, THEN decompose and generate slice-by-slice.
 
-3. **Be Complete**: Code in the Architecture section must be copy-pasteable by implement-plan. No pseudocode, no TODOs, no "implement here" placeholders. If you can't write complete code, an ambiguity wasn't resolved.
+3. **Be Complete**: Code in the Architecture section must be copy-pasteable by implement. No pseudocode, no TODOs, no "implement here" placeholders. If you can't write complete code, an ambiguity wasn't resolved.
 
 4. **Be Skeptical**: Question vague requirements. If an existing pattern doesn't fit the new feature, say so and propose alternatives. Don't force a pattern where it doesn't belong.
 
-5. **Resolve Everything**: No unresolved questions in the final artifact. If something is ambiguous, ask during the checkpoint or micro-checkpoint. The design must be complete enough that write-plan can mechanically decompose it into phases.
+5. **Resolve Everything**: No unresolved questions in the final artifact. If something is ambiguous, ask during the checkpoint or micro-checkpoint. The design must be complete enough that plan can mechanically decompose it into phases.
 
 6. **Present Condensed, Persist Complete**: Micro-checkpoints show the developer summaries, signatures, and key code blocks. The artifact always contains full copy-pasteable code. If the developer asks to see full code, show it — but never default to walls of code in checkpoints.
 
@@ -401,7 +401,7 @@ Spawn multiple agents in parallel when they're searching for different things. E
   - ALWAYS create the skeleton artifact immediately after decomposition approval (Step 6)
   - NEVER leave Architecture code fences empty after their slice is approved — fill via Edit in Step 7d
 - NEVER skip the developer checkpoint — developer input on architectural decisions is the highest-value signal in the design process
-- NEVER edit source files — all code goes into the design document, not the codebase. This skill produces a document, not implementation. Source file editing is implement-plan's job.
+- NEVER edit source files — all code goes into the design document, not the codebase. This skill produces a document, not implementation. Source file editing is implement's job.
 - **Code is source of truth** — if the Architecture code section conflicts with the Decisions prose, the code wins. Update the prose.
 - **Checkpoint recordings**: Record micro-checkpoint interactions in Developer Context with `file:line` references, same as Step 5 questions.
 - **Frontmatter consistency**: Always include frontmatter, use snake_case for multi-word fields, keep tags relevant

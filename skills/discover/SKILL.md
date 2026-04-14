@@ -1,6 +1,6 @@
 ---
-name: research-questions
-description: Generate trace-quality research questions from codebase discovery. Spawns discovery agents and reads key files for depth, then synthesizes into dense question paragraphs for the research skill. Produces question artifacts in thoughts/shared/questions/. Use as Phase 1 of the two-phase research pipeline.
+name: discover
+description: Generate trace-quality research questions from codebase discovery. Spawns discovery agents and reads key files for depth, then synthesizes into dense question paragraphs for the research skill. Produces question artifacts in thoughts/shared/questions/. First stage of the research pipeline.
 argument-hint: [research question or task/ticket description]
 ---
 
@@ -187,7 +187,7 @@ Present the generated questions to the developer for review.
    branch: [Current branch name]
    repository: [Repository name]
    topic: "[User's research topic]"
-   tags: [research-questions, relevant-component-names]
+   tags: [discover, relevant-component-names]
    status: complete
    last_updated: [Current date in YYYY-MM-DD format]
    last_updated_by: [User from injected git context]

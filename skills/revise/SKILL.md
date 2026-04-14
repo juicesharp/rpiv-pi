@@ -1,5 +1,5 @@
 ---
-name: iterate-plan
+name: revise
 description: Update existing implementation plans based on feedback. Makes surgical edits while preserving structure and quality. Use when plans need adjustments after review or during implementation.
 argument-hint: "[plan-path] [feedback]"
 allowed-tools: Edit, Read, Bash(git *), Glob, Grep, Agent
@@ -219,13 +219,13 @@ When spawning research agents:
 
 **Scenario 1: User provides everything upfront**
 ```
-User: /skill:iterate-plan thoughts/shared/plans/2025-10-16_09-00-00_feature.md - add phase for error handling
+User: /skill:revise thoughts/shared/plans/2025-10-16_09-00-00_feature.md - add phase for error handling
 Assistant: [Reads plan, researches error handling patterns, updates plan]
 ```
 
 **Scenario 2: User provides just plan file**
 ```
-User: /skill:iterate-plan thoughts/shared/plans/2025-10-16_09-00-00_feature.md
+User: /skill:revise thoughts/shared/plans/2025-10-16_09-00-00_feature.md
 Assistant: I've found the plan. What changes would you like to make?
 User: Split Phase 2 into two phases - one for backend, one for frontend
 Assistant: [Proceeds with update]
@@ -233,7 +233,7 @@ Assistant: [Proceeds with update]
 
 **Scenario 3: User provides no arguments**
 ```
-User: /skill:iterate-plan
+User: /skill:revise
 Assistant: Which plan would you like to update? Please provide the path...
 User: thoughts/shared/plans/2025-10-16_09-00-00_feature.md
 Assistant: I've found the plan. What changes would you like to make?

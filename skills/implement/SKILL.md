@@ -1,5 +1,5 @@
 ---
-name: implement-plan
+name: implement
 description: Execute approved implementation plans phase by phase. Implements changes with verification against success criteria. Use when a plan is ready for implementation.
 argument-hint: "[plan-path] [Phase N]"
 allowed-tools: Read, Edit, Write, Bash(*), Glob, Grep, Agent

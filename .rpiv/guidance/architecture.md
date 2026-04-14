@@ -16,14 +16,14 @@ rpiv-pi/
 
 Pi discovers extensions via `"extensions": ["./extensions"]` and skills via `"skills": ["./skills"]` in `package.json`.
 
-Skill pipeline: `research-questions` → `research` → `design` → `write-plan` → `implement-plan` → `validate-plan`
+Skill pipeline: `discover` → `research` → `design` → `plan` → `implement` → `validate`
 
 # Commands
 
 | Command | Description |
 |---|---|
 | `pi` | Start a Pi session with rpiv-pi loaded |
-| `/skill:<name>` | Invoke a skill (e.g. `/skill:commit`, `/skill:research-questions`) |
+| `/skill:<name>` | Invoke a skill (e.g. `/skill:commit`, `/skill:discover`) |
 | `/todos` | Show current todo list |
 | `/advisor` | Configure advisor model + effort level |
 | `/rpiv-update-agents` | Refresh `<cwd>/.pi/agents/` from bundled agent definitions |

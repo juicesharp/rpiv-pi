@@ -1,12 +1,12 @@
 ---
-name: write-plan
+name: plan
 description: Create phased implementation plans from design artifacts. Decomposes designs into parallelized atomic phases with success criteria in thoughts/shared/plans/. Use after design.
 argument-hint: [design artifact path]
 ---
 
 # Write Plan
 
-You are tasked with creating phased implementation plans from design artifacts. The design artifact contains all architectural decisions, full implementation code, and ordering constraints. Your job is to decompose that design into parallelized atomic phases with success criteria that implement-plan can execute.
+You are tasked with creating phased implementation plans from design artifacts. The design artifact contains all architectural decisions, full implementation code, and ordering constraints. Your job is to decompose that design into parallelized atomic phases with success criteria that implement can execute.
 
 ## Step 1: Read Design Artifact
 
@@ -25,7 +25,7 @@ When this command is invoked:
    ```
    I'll create an implementation plan from a design artifact. Please provide the path:
 
-   `/skill:write-plan thoughts/shared/designs/2025-01-20_09-30-00_feature.md`
+   `/skill:plan thoughts/shared/designs/2025-01-20_09-30-00_feature.md`
 
    Run `/skill:design` first to produce the design artifact. There is no standalone path.
    ```
@@ -39,7 +39,7 @@ Read the Ordering Constraints and File Map from the design artifact. Apply phasi
 
 1. **Independently implementable**: Each phase must compile and pass tests on its own — no cross-phase runtime state
 2. **Parallelizable**: Phases that don't depend on each other are explicitly marked (e.g., "Phases 2 and 3 can run in parallel")
-3. **Worktree-sized**: Each phase should be appropriate for a single implement-plan session in a worktree (~3-8 files changed, 1-3 components touched)
+3. **Worktree-sized**: Each phase should be appropriate for a single implement session in a worktree (~3-8 files changed, 1-3 components touched)
 4. **Dependency-ordered**: Phase ordering follows the design artifact's Ordering Constraints
 5. **Grouped coherently**: Related file changes go in the same phase (e.g., import change + hook setup + JSX modification for one component)
 
@@ -185,7 +185,7 @@ last_updated_by: [User from injected git context]
    - Are the success criteria specific enough?
    - Any phase that should be split or merged?
 
-   When ready, run `/skill:implement-plan thoughts/shared/plans/[filename].md Phase 1`
+   When ready, run `/skill:implement thoughts/shared/plans/[filename].md Phase 1`
    ```
 
 2. **Iterate based on feedback** — be ready to:
@@ -275,7 +275,7 @@ last_updated_by: [User from injected git context]
 
 - NEVER edit source files — this skill produces a plan document, not implementation
 - Always read the design artifact FULLY before decomposing into phases
-- The plan template must be compatible with implement-plan — preserve the phase/success criteria structure
+- The plan template must be compatible with implement — preserve the phase/success criteria structure
 - If the design artifact has unresolved questions, STOP — send the developer back to design
 - Code in the plan comes from the design artifact's Architecture section — do not invent new code
 - **Frontmatter consistency**: Use snake_case for multi-word field names in plan frontmatter

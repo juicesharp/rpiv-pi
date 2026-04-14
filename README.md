@@ -46,11 +46,11 @@ On first session start, rpiv-pi automatically:
 ### Typical Workflow
 
 ```
-/skill:research-questions "how does X work"
+/skill:discover "how does X work"
 /skill:research thoughts/shared/questions/<latest>.md
 /skill:design thoughts/shared/research/<latest>.md
-/skill:write-plan thoughts/shared/designs/<latest>.md
-/skill:implement-plan thoughts/shared/plans/<latest>.md Phase <N>
+/skill:plan thoughts/shared/designs/<latest>.md
+/skill:implement thoughts/shared/plans/<latest>.md Phase <N>
 ```
 
 Each skill produces an artifact consumed by the next. Run them in order, or jump in at any stage if you already have the input artifact.
@@ -63,19 +63,19 @@ Invoke via `/skill:<name>` from inside a Pi session.
 
 | Skill | Input | Output | Description |
 |---|---|---|---|
-| `research-questions` | — | `thoughts/shared/questions/` | Generate research questions from codebase discovery |
+| `discover` | — | `thoughts/shared/questions/` | Generate research questions from codebase discovery |
 | `research` | Questions artifact | `thoughts/shared/research/` | Answer questions via parallel analysis agents |
-| `research-solutions` | — | `thoughts/shared/solutions/` | Compare solution approaches with pros/cons |
+| `explore` | — | `thoughts/shared/solutions/` | Compare solution approaches with pros/cons |
 | `design` | Research or solutions artifact | `thoughts/shared/designs/` | Design features via vertical-slice decomposition |
 
 #### Implementation
 
 | Skill | Input | Output | Description |
 |---|---|---|---|
-| `write-plan` | Design artifact | `thoughts/shared/plans/` | Create phased implementation plans |
-| `implement-plan` | Plan artifact | Code changes | Execute plans phase by phase |
-| `iterate-plan` | Plan artifact | Updated plan | Revise plans based on feedback |
-| `validate-plan` | Plan artifact | Validation report | Verify plan execution |
+| `plan` | Design artifact | `thoughts/shared/plans/` | Create phased implementation plans |
+| `implement` | Plan artifact | Code changes | Execute plans phase by phase |
+| `revise` | Plan artifact | Updated plan | Revise plans based on feedback |
+| `validate` | Plan artifact | Validation report | Verify plan execution |
 
 #### Testing
 
