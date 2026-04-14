@@ -16,8 +16,9 @@
 
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { isToolCallEventType, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { clearInjectionState, handleToolCallGuidance, injectRootGuidance } from "./guidance.js";
+import { clearGitContextCache, getGitContext, isGitMutatingCommand } from "./git-context.js";
 import { copyBundledAgents } from "./agents.js";
 import {
 	hasPiSubagentsInstalled,
@@ -74,37 +75,35 @@ export default function (pi: ExtensionAPI) {
 	// ── Session Compact — drop injection state, re-inject root guidance ────
 	pi.on("session_compact", async (_event, ctx) => {
 		clearInjectionState();
+		clearGitContextCache();
 		injectRootGuidance(ctx.cwd, pi);
 	});
 
 	// ── Session Shutdown ───────────────────────────────────────────────────
 	pi.on("session_shutdown", async (_event, _ctx) => {
 		clearInjectionState();
+		clearGitContextCache();
 	});
 
-	// ── Guidance Injection ─────────────────────────────────────────────────
+	// ── Guidance Injection + Git Cache Invalidation ────────────────────────
 	pi.on("tool_call", async (event, ctx) => {
 		handleToolCallGuidance(event, ctx, pi);
+		if (isToolCallEventType("bash", event) && isGitMutatingCommand(event.input.command)) {
+			clearGitContextCache();
+		}
 	});
 
 	// ── Git Context Injection ──────────────────────────────────────────────
-	pi.on("before_agent_start", async (_event, ctx) => {
-		try {
-			const branch = await pi.exec("git", ["branch", "--show-current"], { timeout: 5000 });
-			const commit = await pi.exec("git", ["rev-parse", "--short", "HEAD"], { timeout: 5000 });
-
-			if (branch.stdout.trim() || commit.stdout.trim()) {
-				return {
-					message: {
-						customType: "rpiv-git-context",
-						content: `## Git Context\n- Branch: ${branch.stdout.trim() || "no-branch"}\n- Commit: ${commit.stdout.trim() || "no-commit"}`,
-						display: false,
-					},
-				};
-			}
-		} catch {
-			// Not a git repo — skip silently
-		}
+	pi.on("before_agent_start", async (_event, _ctx) => {
+		const g = await getGitContext(pi);
+		if (!g) return;
+		return {
+			message: {
+				customType: "rpiv-git-context",
+				content: `## Git Context\n- Branch: ${g.branch}\n- Commit: ${g.commit}`,
+				display: false,
+			},
+		};
 	});
 
 	// ── /rpiv-update-agents Command ────────────────────────────────────────
