@@ -18,7 +18,12 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { isToolCallEventType, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { clearInjectionState, handleToolCallGuidance, injectRootGuidance } from "./guidance.js";
-import { clearGitContextCache, getGitContext, isGitMutatingCommand } from "./git-context.js";
+import {
+	clearGitContextCache,
+	isGitMutatingCommand,
+	resetInjectedMarker,
+	takeGitContextIfChanged,
+} from "./git-context.js";
 import { copyBundledAgents } from "./agents.js";
 import {
 	hasPiSubagentsInstalled,
@@ -44,6 +49,12 @@ export default function (pi: ExtensionAPI) {
 		];
 		for (const dir of dirs) {
 			mkdirSync(join(ctx.cwd, dir), { recursive: true });
+		}
+
+		// Inject git context once into the transcript
+		const gitMsg = await takeGitContextIfChanged(pi);
+		if (gitMsg) {
+			pi.sendMessage({ customType: "rpiv-git-context", content: gitMsg, display: false });
 		}
 
 		// Auto-copy bundled agents into <cwd>/.pi/agents/
@@ -76,13 +87,19 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_compact", async (_event, ctx) => {
 		clearInjectionState();
 		clearGitContextCache();
+		resetInjectedMarker();
 		injectRootGuidance(ctx.cwd, pi);
+		const gitMsg = await takeGitContextIfChanged(pi);
+		if (gitMsg) {
+			pi.sendMessage({ customType: "rpiv-git-context", content: gitMsg, display: false });
+		}
 	});
 
 	// ── Session Shutdown ───────────────────────────────────────────────────
 	pi.on("session_shutdown", async (_event, _ctx) => {
 		clearInjectionState();
 		clearGitContextCache();
+		resetInjectedMarker();
 	});
 
 	// ── Guidance Injection + Git Cache Invalidation ────────────────────────
@@ -93,16 +110,12 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	// ── Git Context Injection ──────────────────────────────────────────────
+	// ── Git Context Injection (only when cache diverges from transcript) ───
 	pi.on("before_agent_start", async (_event, _ctx) => {
-		const g = await getGitContext(pi);
-		if (!g) return;
+		const content = await takeGitContextIfChanged(pi);
+		if (!content) return;
 		return {
-			message: {
-				customType: "rpiv-git-context",
-				content: `## Git Context\n- Branch: ${g.branch}\n- Commit: ${g.commit}`,
-				display: false,
-			},
+			message: { customType: "rpiv-git-context", content, display: false },
 		};
 	});
 
