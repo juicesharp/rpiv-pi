@@ -278,8 +278,14 @@ export function syncBundledAgents(cwd: string, apply: boolean): SyncResult {
 		}
 	}
 
-	// 5. Update manifest to reflect current source set (regardless of apply mode)
-	writeManifest(targetDir, sourceEntries);
+	// 5. Update manifest to reflect what's currently managed on disk.
+	// apply=true: stale files were removed, so manifest = sourceEntries.
+	// apply=false: stale files still exist on disk and must stay tracked
+	// so the next apply can remove them.
+	const manifestEntries = apply
+		? sourceEntries
+		: [...sourceEntries, ...result.pendingRemove];
+	writeManifest(targetDir, manifestEntries);
 
 	// 6. Populate legacy `copied` alias (added + updated)
 	for (const name of result.added) {
