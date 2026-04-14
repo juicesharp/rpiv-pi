@@ -4,10 +4,6 @@ description: Create phased implementation plans from design artifacts. Decompose
 argument-hint: [design artifact path]
 ---
 
-## Task Input
-
-If the user has not already provided a specific design artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
-
 # Write Plan
 
 You are tasked with creating phased implementation plans from design artifacts. The design artifact contains all architectural decisions, full implementation code, and ordering constraints. Your job is to decompose that design into parallelized atomic phases with success criteria that implement-plan can execute.

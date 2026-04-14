@@ -6,10 +6,6 @@ allowed-tools: Read, Edit, Write, Bash(*), Glob, Grep, Agent
 disable-model-invocation: true
 ---
 
-## Task
-
-If the user has not already provided a specific plan path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
-
 # Implement Plan
 
 You are tasked with implementing an approved technical plan from `thoughts/shared/plans/`. These plans contain phases with specific changes and success criteria.

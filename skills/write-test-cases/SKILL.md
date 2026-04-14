@@ -4,10 +4,6 @@ description: Generate manual test case specifications for a single feature by an
 argument-hint: "[feature name, component path, feature slug, or _meta.md path] [additional instructions]"
 ---
 
-## Feature Under Test
-
-If the user has not already provided a specific feature identifier (feature name, component path, feature slug, or _meta.md path), ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
-
 # Write Test Cases
 
 You are tasked with generating manual test case specifications for a single feature by analyzing code in parallel and producing flow-based test case documents for QA teams.

@@ -5,10 +5,6 @@ argument-hint: [target-directory]
 allowed-tools: Agent, Read, Write, Edit, Glob, Grep
 ---
 
-## Target Project
-
-If the user has not already provided a specific target directory or feature description, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
-
 # Outline Test Cases
 
 You are tasked with discovering all testable features in a project and creating a folder outline under `.rpiv/test-cases/`. Each feature gets its own folder with a `_meta.md` file containing discovered routes, endpoints, scope decisions, and domain context. A root `README.md` summarizes the full project outline. No test case content is generated — use `write-test-cases` per feature to fill the folders.

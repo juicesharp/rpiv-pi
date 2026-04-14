@@ -6,11 +6,6 @@ argument-hint: [research artifact path]
 
 # Design
 
-## Task
-
-If the user has not already provided a research artifact path, ask them for it before proceeding. Their input will appear as a follow-up paragraph after this skill body.
-
-
 You are tasked with designing how code will be shaped for a feature or change. This iterative variant decomposes features into vertical slices and generates code slice-by-slice with developer micro-checkpoints between slices. The design artifact feeds directly into write-plan, which sequences it into phases.
 
 **How it works**:
