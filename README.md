@@ -1,109 +1,48 @@
 # rpiv-pi
 
-Skill-based development workflow for Pi — research, design, plan, implement, review.
+[![npm version](https://img.shields.io/npm/v/@juicesharp/rpiv-pi.svg)](https://www.npmjs.com/package/@juicesharp/rpiv-pi)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Version: 0.4.0
+Skill-based development workflow for [Pi](https://github.com/badlogic/pi-mono) — research, design, plan, implement, review. rpiv-pi extends the Pi coding agent with a pipeline of chained AI skills, named subagents for parallel analysis, and session lifecycle hooks for automatic context injection.
 
-## Requirements
+## Prerequisites
 
-All dependencies are peer-dependencies — expected to be installed in the Pi environment.
+- **[Pi CLI](https://github.com/badlogic/pi-mono)** — the `pi` command must be available
+- **Node.js** — required by Pi
+- **git** *(recommended)* — rpiv-pi works without it, but branch and commit context won't be available to skills
 
-### Runtime libraries
-- `@mariozechner/pi-coding-agent` — the Pi CLI runtime
-- `@mariozechner/pi-ai`
-- `@mariozechner/pi-tui`
-- `@sinclair/typebox`
+## Quick Start
 
-### Sibling Pi plugins (hard-required)
-- `@tintinweb/pi-subagents` — provides the `Agent` tool and the `/agents` command. Without it, every rpiv-pi skill that dispatches a named subagent silently falls back to `general-purpose`.
-- `@juicesharp/rpiv-ask-user-question` — provides the `ask_user_question` tool.
-- `@juicesharp/rpiv-todo` — provides the `todo` tool, `/todos` command, and overlay widget.
-- `@juicesharp/rpiv-advisor` — provides the `advisor` tool and `/advisor` command.
-- `@juicesharp/rpiv-web-tools` — provides the `web_search` and `web_fetch` tools and `/web-search-config` command.
-
-rpiv-pi emits an aggregated warning on session start listing any missing siblings, and `/rpiv-setup` installs them all in one go.
-
-## Installation
+1. Install rpiv-pi:
 
 ```bash
-pi install /Users/sguslystyi/rpiv-pi
+pi install npm:@juicesharp/rpiv-pi
 ```
 
-Then from inside a Pi session, install all siblings in one go:
+2. Start a Pi session and install sibling plugins:
 
 ```
 /rpiv-setup
 ```
 
-Or install them manually:
+3. Restart your Pi session.
 
-```bash
-pi install npm:@tintinweb/pi-subagents
-pi install npm:@juicesharp/rpiv-ask-user-question
-pi install npm:@juicesharp/rpiv-todo
-pi install npm:@juicesharp/rpiv-advisor
-pi install npm:@juicesharp/rpiv-web-tools
-```
-
-After the first install of `@juicesharp/rpiv-web-tools`, set the Brave Search API key from inside a Pi session:
+4. *(Optional)* Configure web search:
 
 ```
 /web-search-config
 ```
 
-On first session start in any project, rpiv-pi auto-copies agent files to `<cwd>/.pi/agents/`.
+### First Session
 
-## What's included
+On first session start, rpiv-pi automatically:
+- Copies agent profiles to `<cwd>/.pi/agents/`
+- Scaffolds `thoughts/shared/` directories for pipeline artifacts
+- Shows a warning if any sibling plugins are missing
 
-### Extension in this package
+## Usage
 
-| Extension | Tools | Commands | Session hooks |
-|-----------|-------|----------|---------------|
-| `rpiv-core` | — | `/rpiv-update-agents`, `/rpiv-setup` | `session_start`, `session_compact`, `session_shutdown`, `tool_call`, `before_agent_start` |
-
-Tool-owning plugins are shipped separately — see the Requirements section above.
-
-### Skills (17)
-
-Invoke via `/skill:<name>` from inside a Pi session.
-
-| Skill | Description |
-|---|---|
-| `annotate-guidance` | Generate architecture.md guidance files in `.rpiv/guidance/` by analyzing architecture and patterns in parallel. |
-| `annotate-inline` | Generate CLAUDE.md files across a project by analyzing architecture and patterns in parallel. |
-| `code-review` | Conduct comprehensive code reviews by analyzing changes in parallel. |
-| `commit` | Create structured git commits grouped by logical change. |
-| `create-handoff` | Create context-preserving handoff documents for session transitions. |
-| `design` | Design features through iterative vertical-slice decomposition with developer micro-checkpoints. Accepts research or solutions artifacts. |
-| `implement-plan` | Execute approved implementation plans phase by phase. |
-| `iterate-plan` | Update existing implementation plans based on feedback. |
-| `migrate-to-guidance` | Migrate existing CLAUDE.md files to the `.rpiv/guidance/` system. |
-| `outline-test-cases` | Discover testable features and create a folder outline under `.rpiv/test-cases/` with per-feature metadata. |
-| `research` | Answer structured research questions via targeted parallel analysis agents. |
-| `research-questions` | Generate trace-quality research questions from codebase discovery. |
-| `research-solutions` | Analyze solution options for features or changes with pros/cons. |
-| `resume-handoff` | Resume work from a handoff document. |
-| `validate-plan` | Verify that an implementation plan was correctly executed. |
-| `write-plan` | Create phased implementation plans from design artifacts. |
-| `write-test-cases` | Generate manual test case specifications for a single feature by analyzing code in parallel. |
-
-### Agents (9)
-
-Dispatched via the `Agent` tool (provided by `@tintinweb/pi-subagents`) with `subagent_type: "<name>"`.
-
-| Agent | Purpose |
-|---|---|
-| `codebase-analyzer` | Analyzes codebase implementation details for specific components. |
-| `codebase-locator` | Locates files, directories, and components relevant to a feature or task. |
-| `codebase-pattern-finder` | Finds similar implementations, usage examples, and existing patterns with concrete code. |
-| `integration-scanner` | Finds inbound references, outbound dependencies, config registrations, and event subscriptions. |
-| `precedent-locator` | Finds similar past changes in git history — commits, blast radius, follow-up fixes. |
-| `test-case-locator` | Finds existing manual test cases in `.rpiv/test-cases/` and reports coverage stats. |
-| `thoughts-analyzer` | Deep-dive analysis on research topics in `thoughts/`. |
-| `thoughts-locator` | Discovers relevant documents in the `thoughts/` directory by topic. |
-| `web-search-researcher` | Researches web-based information and modern documentation via `web_search` / `web_fetch`. |
-
-## Typical workflow
+### Typical Workflow
 
 ```
 /skill:research-questions "how does X work"
@@ -113,19 +52,126 @@ Dispatched via the `Agent` tool (provided by `@tintinweb/pi-subagents`) with `su
 /skill:implement-plan thoughts/shared/plans/<latest>.md Phase <N>
 ```
 
-## Migration from 0.3.x
+Each skill produces an artifact consumed by the next. Run them in order, or jump in at any stage if you already have the input artifact.
 
-Users upgrading from rpiv-pi 0.3.x need to install the four extracted sibling plugins. The fastest path:
+### Skills
 
-1. `pi install <path-to-rpiv-pi>@0.4.0`
+Invoke via `/skill:<name>` from inside a Pi session.
+
+#### Research & Design
+
+| Skill | Input | Output | Description |
+|---|---|---|---|
+| `research-questions` | — | `thoughts/shared/questions/` | Generate research questions from codebase discovery |
+| `research` | Questions artifact | `thoughts/shared/research/` | Answer questions via parallel analysis agents |
+| `research-solutions` | — | `thoughts/shared/solutions/` | Compare solution approaches with pros/cons |
+| `design` | Research or solutions artifact | `thoughts/shared/designs/` | Design features via vertical-slice decomposition |
+
+#### Implementation
+
+| Skill | Input | Output | Description |
+|---|---|---|---|
+| `write-plan` | Design artifact | `thoughts/shared/plans/` | Create phased implementation plans |
+| `implement-plan` | Plan artifact | Code changes | Execute plans phase by phase |
+| `iterate-plan` | Plan artifact | Updated plan | Revise plans based on feedback |
+| `validate-plan` | Plan artifact | Validation report | Verify plan execution |
+
+#### Testing
+
+| Skill | Input | Output | Description |
+|---|---|---|---|
+| `outline-test-cases` | — | `.rpiv/test-cases/` | Discover testable features with per-feature metadata |
+| `write-test-cases` | Outline metadata | Test case specs | Generate manual test specifications |
+
+#### Annotation
+
+| Skill | Input | Output | Description |
+|---|---|---|---|
+| `annotate-guidance` | — | `.rpiv/guidance/*.md` | Generate architecture guidance files |
+| `annotate-inline` | — | `CLAUDE.md` files | Generate inline documentation |
+| `migrate-to-guidance` | CLAUDE.md files | `.rpiv/guidance/` | Convert inline docs to guidance format |
+
+#### Utilities
+
+| Skill | Description |
+|---|---|
+| `code-review` | Comprehensive code reviews analyzing changes in parallel |
+| `commit` | Structured git commits grouped by logical change |
+| `create-handoff` | Context-preserving handoff documents for session transitions |
+| `resume-handoff` | Resume work from a handoff document |
+
+### Commands
+
+| Command | Description |
+|---|---|
+| `/rpiv-setup` | Install all sibling plugins in one go |
+| `/rpiv-update-agents` | Refresh agent profiles from bundled defaults |
+| `/advisor` | Configure advisor model and reasoning effort |
+| `/todos` | Show current todo list |
+| `/web-search-config` | Set Brave Search API key |
+
+### Agents
+
+Agents are dispatched automatically by skills via the `Agent` tool — you don't invoke them directly.
+
+| Agent | Purpose |
+|---|---|
+| `codebase-analyzer` | Analyzes implementation details for specific components |
+| `codebase-locator` | Locates files and components relevant to a task |
+| `codebase-pattern-finder` | Finds similar implementations and usage patterns |
+| `integration-scanner` | Maps inbound references, outbound deps, and config wiring |
+| `precedent-locator` | Finds similar past changes in git history |
+| `test-case-locator` | Finds existing test cases and reports coverage stats |
+| `thoughts-analyzer` | Deep-dive analysis on research topics |
+| `thoughts-locator` | Discovers relevant documents in the `thoughts/` directory |
+| `web-search-researcher` | Researches web-based information and documentation |
+
+## Architecture
+
+```
+rpiv-pi/
+├── extensions/rpiv-core/   — runtime extension: hooks, commands, guidance injection
+├── skills/                 — AI workflow skills (research → design → plan → implement)
+├── agents/                 — named subagent profiles dispatched by skills
+└── thoughts/shared/        — pipeline artifact store
+```
+
+Pi discovers extensions via `"extensions": ["./extensions"]` and skills via `"skills": ["./skills"]` in `package.json`.
+
+## Configuration
+
+- **Web search** — run `/web-search-config` to set the Brave Search API key, or set the `BRAVE_SEARCH_API_KEY` environment variable
+- **Advisor** — run `/advisor` to select a reviewer model and reasoning effort
+- **Agent concurrency** — `@tintinweb/pi-subagents` defaults to 4 concurrent agents; raise via `/agents → Settings → Max concurrency → 48` if skills stall on wide fan-outs
+- **Agent profiles** — editable at `<cwd>/.pi/agents/`; refresh from bundled defaults with `/rpiv-update-agents`
+
+## Upgrading from 0.3.x
+
+Tool logic was extracted into sibling plugins in 0.4.0. After upgrading:
+
+1. `pi install npm:@juicesharp/rpiv-pi`
 2. Start a Pi session.
-3. Run `/rpiv-setup` and confirm.
+3. Run `/rpiv-setup` to install the four extracted plugins:
+   - `@juicesharp/rpiv-ask-user-question`
+   - `@juicesharp/rpiv-todo`
+   - `@juicesharp/rpiv-advisor`
+   - `@juicesharp/rpiv-web-tools`
 4. Restart the session.
+5. Re-run `/advisor` and `/web-search-config` — saved configuration at `~/.config/rpiv-pi/` is no longer read; each plugin now reads from its own config path.
 
-Saved configuration at `~/.config/rpiv-pi/advisor.json` and `~/.config/rpiv-pi/web-tools.json` is no longer read. Re-run `/advisor` and `/web-search-config` once after installing their respective sibling plugins. The `BRAVE_SEARCH_API_KEY` env var continues to work unchanged.
+The `BRAVE_SEARCH_API_KEY` environment variable continues to work unchanged.
 
-## Notes
+## Troubleshooting
 
-- Agent files live at `<cwd>/.pi/agents/` and are editable; `/rpiv-update-agents` refreshes them from the bundled defaults.
-- Artifacts written by skills land under `thoughts/shared/{research,questions,designs,plans,handoffs,reviews,solutions}/` in the current project.
-- `@tintinweb/pi-subagents` defaults to 4 concurrent background agents per session; raise it per-session via `/agents → Settings → Max concurrency → 48` if skills stall on wide fan-outs.
+| Symptom | Cause | Fix |
+|---|---|---|
+| Warning about missing siblings on session start | Sibling plugins not installed | Run `/rpiv-setup` |
+| `/rpiv-setup` fails on a package | Network or registry issue | Check connection, retry with `pi install npm:<pkg>`, re-run `/rpiv-setup` |
+| `/rpiv-setup` says "requires interactive mode" | Running in headless mode | Install manually: `pi install npm:<pkg>` for each sibling |
+| `web_search` or `web_fetch` errors | Brave API key not configured | Run `/web-search-config` or set `BRAVE_SEARCH_API_KEY` |
+| `advisor` tool not available after upgrade | Advisor model selection lost | Run `/advisor` to re-select a model |
+| Skills hang or serialize agent calls | Agent concurrency too low | Raise via `/agents → Settings → Max concurrency → 48` |
+
+## License
+
+MIT
