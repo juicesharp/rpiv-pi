@@ -25,6 +25,7 @@ import {
 	takeGitContextIfChanged,
 } from "./git-context.js";
 import { syncBundledAgents } from "./agents.js";
+import { spawnPiInstall } from "./pi-installer.js";
 import {
 	hasPiSubagentsInstalled,
 	hasRpivAskUserQuestionInstalled,
@@ -238,7 +239,7 @@ export default function (pi: ExtensionAPI) {
 			for (const { pkg } of missing) {
 				ctx.ui.notify(`Installing ${pkg}…`, "info");
 				try {
-					const result = await pi.exec("pi", ["install", pkg], { timeout: 120_000 });
+					const result = await spawnPiInstall(pkg, 120_000);
 					if (result.code === 0) {
 						succeeded.push(pkg);
 					} else {
