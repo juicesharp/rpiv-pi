@@ -3,12 +3,12 @@
 [![npm version](https://img.shields.io/npm/v/@juicesharp/rpiv-pi.svg)](https://www.npmjs.com/package/@juicesharp/rpiv-pi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Skill-based development workflow for [Pi](https://github.com/badlogic/pi-mono) — research, design, plan, implement, validate. rpiv-pi extends the Pi coding agent with a pipeline of chained AI skills, named subagents for parallel analysis, and session lifecycle hooks for automatic context injection.
+Skill-based development workflow for [Pi Agent](https://github.com/badlogic/pi-mono) — discover, research, design, plan, implement, and validate. rpiv-pi extends Pi Agent with a pipeline of chained AI skills, named subagents for parallel analysis, and session lifecycle hooks for automatic context injection.
 
 ## Prerequisites
 
-- **[Pi CLI](https://github.com/badlogic/pi-mono)** — the `pi` command must be available
-- **Node.js** — required by Pi
+- **[Pi Agent](https://github.com/badlogic/pi-mono)** — the `pi` command must be available
+- **Node.js** — required by Pi Agent
 - **git** *(recommended)* — rpiv-pi works without it, but branch and commit context won't be available to skills
 
 ## Quick Start
@@ -19,15 +19,47 @@ Skill-based development workflow for [Pi](https://github.com/badlogic/pi-mono) �
 pi install npm:@juicesharp/rpiv-pi
 ```
 
-2. Start a Pi session and install sibling plugins:
+2. Configure a model provider (pick one):
+
+   - **Subscription login** — start Pi Agent and run `/login` to authenticate with Anthropic Claude Pro/Max, ChatGPT Plus/Pro, GitHub Copilot, or Gemini.
+   - **BYOK (API key)** — edit `~/.pi/agent/models.json` and add a provider entry with `baseUrl`, `api`, `apiKey`, and `models[]`. Example (z.ai GLM coding plan):
+
+     ```json
+     {
+       "providers": {
+         "zai": {
+           "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+           "api": "openai-completions",
+           "apiKey": "XXXXXXXXX",
+           "compat": {
+             "supportsDeveloperRole": false,
+             "thinkingFormat": "zai"
+           },
+           "models": [
+             {
+               "id": "glm-5.1",
+               "name": "glm-5.1 [coding plan]",
+               "reasoning": true,
+               "input": ["text"],
+               "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+               "contextWindow": 204800,
+               "maxTokens": 131072
+             }
+           ]
+         }
+       }
+     }
+     ```
+
+3. Start a Pi Agent session and install sibling plugins:
 
 ```
 /rpiv-setup
 ```
 
-3. Restart your Pi session.
+4. Restart your Pi Agent session.
 
-4. *(Optional)* Configure web search:
+5. *(Optional)* Configure web search:
 
 ```
 /web-search-config
@@ -35,7 +67,7 @@ pi install npm:@juicesharp/rpiv-pi
 
 ### First Session
 
-On first session start, rpiv-pi automatically:
+On first Pi Agent session start, rpiv-pi automatically:
 - Copies agent profiles to `<cwd>/.pi/agents/`
 - Detects outdated or removed agents on subsequent starts
 - Scaffolds `thoughts/shared/` directories for pipeline artifacts
@@ -57,7 +89,7 @@ Each skill produces an artifact consumed by the next. Run them in order, or jump
 
 ### Skills
 
-Invoke via `/skill:<name>` from inside a Pi session.
+Invoke via `/skill:<name>` from inside a Pi Agent session.
 
 #### Research & Design
 
@@ -137,7 +169,7 @@ rpiv-pi/
 └── thoughts/shared/        — pipeline artifact store
 ```
 
-Pi discovers extensions via `"extensions": ["./extensions"]` and skills via `"skills": ["./skills"]` in `package.json`.
+Pi Agent discovers extensions via `"extensions": ["./extensions"]` and skills via `"skills": ["./skills"]` in `package.json`.
 
 ## Configuration
 
@@ -145,22 +177,6 @@ Pi discovers extensions via `"extensions": ["./extensions"]` and skills via `"sk
 - **Advisor** — run `/advisor` to select a reviewer model and reasoning effort
 - **Agent concurrency** — `@tintinweb/pi-subagents` defaults to 4 concurrent agents; raise via `/agents → Settings → Max concurrency → 48` if skills stall on wide fan-outs
 - **Agent profiles** — editable at `<cwd>/.pi/agents/`; sync from bundled defaults with `/rpiv-update-agents` (overwrites rpiv-managed files, preserves your custom agents)
-
-## Upgrading from 0.3.x
-
-Tool logic was extracted into sibling plugins in 0.4.0. After upgrading:
-
-1. `pi install npm:@juicesharp/rpiv-pi`
-2. Start a Pi session.
-3. Run `/rpiv-setup` to install the four extracted plugins:
-   - `@juicesharp/rpiv-ask-user-question`
-   - `@juicesharp/rpiv-todo`
-   - `@juicesharp/rpiv-advisor`
-   - `@juicesharp/rpiv-web-tools`
-4. Restart the session.
-5. Re-run `/advisor` and `/web-search-config` — saved configuration at `~/.config/rpiv-pi/` is no longer read; each plugin now reads from its own config path.
-
-The `BRAVE_SEARCH_API_KEY` environment variable continues to work unchanged.
 
 ## Troubleshooting
 
