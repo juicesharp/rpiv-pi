@@ -19,7 +19,7 @@ Please provide your research question or area of interest.
 ```
 and wait for the user's research query, then proceed to Step 1.
 
-Before Step 1, create a todo list tracking every step below (Step 1 through Step 7). Mark each step `in_progress` before starting it and `completed` immediately when its deliverable is produced. This list is your execution contract — do not skip, reorder, or substitute steps regardless of the user's stated goal.
+Before Step 1, create a todo list tracking every step below (Step 1 through Step 7).
 
 ## Steps
 
@@ -232,7 +232,7 @@ When ready, run `/skill:research thoughts/shared/questions/[filename].md` to ans
 - **Depth through reading**: After discovery agents return, always read 5-10 key files in main context. This structural understanding is what makes trace-quality questions possible — locators find WHERE, file reads reveal HOW.
 - **Question density**: Each question must name specific files, functions, and types — not generic titles. If a question doesn't reference at least 3 specific code artifacts (files, functions, types), it's too thin.
 - **File reading**: Always read mentioned files FULLY (no limit/offset) before spawning agents
-- **Critical ordering**: Follow the numbered steps exactly. The todo list you created in Initial Setup is your execution contract — NEVER skip a pending step or substitute a different deliverable (e.g. directly implementing the user's goal) regardless of how actionable the user's input seems.
+- **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read mentioned files first (Step 1)
   - ALWAYS wait for all agents to complete (Step 2)
   - ALWAYS read key files for depth before writing questions (Step 3)
