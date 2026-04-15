@@ -5,7 +5,8 @@ User-invocable AI workflow definitions. Each `SKILL.md` is a structured prompt i
 
 ## Dependencies
 - **Pi framework**: reads `"skills": ["./skills"]` from `package.json`; injects SKILL.md body as system context on invocation
-- **`extensions/rpiv-core/`**: provides the runtime environment skills assume — `ask_user_question`, `todo`, `advisor` tools; git context injection; `thoughts/` directory scaffolding
+- **Sibling plugins**: provide the tools skills call — `ask_user_question` (`@juicesharp/rpiv-ask-user-question`), `todo` (`@juicesharp/rpiv-todo`), `advisor` (`@juicesharp/rpiv-advisor`), `web_search`/`web_fetch` (`@juicesharp/rpiv-web-tools`), `Agent` (`@tintinweb/pi-subagents`)
+- **`extensions/rpiv-core/`**: session-time scaffolding (`thoughts/` dirs), guidance injection, git-context injection, bundled-agent sync
 
 ## Consumers
 - **Users**: `/skill:<name>` invokes the matching skill

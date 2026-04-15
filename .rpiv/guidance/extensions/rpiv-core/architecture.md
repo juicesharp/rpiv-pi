@@ -1,29 +1,35 @@
 # rpiv-core Extension
 
 ## Responsibility
-The main Pi extension. Registers tools, slash commands, and session lifecycle hooks with the Pi `ExtensionAPI`. Manages in-session state (todos, advisor config, guidance injection). All workflow intelligence lives in `skills/` — this layer only provides runtime infrastructure.
+Pi runtime orchestrator. Owns zero tools. Wires five session lifecycle hooks (guidance injection, git-context injection, `thoughts/` scaffold, bundled-agent sync) and registers two slash commands (`/rpiv-update-agents`, `/rpiv-setup`). All tool surfaces live in sibling plugins listed in `siblings.ts`; all workflow intelligence lives in `skills/`.
 
 ## Dependencies
-- **`@mariozechner/pi-coding-agent`**: `ExtensionAPI`, `DynamicBorder`, session types, `convertToLlm`
-- **`@mariozechner/pi-ai`**: `completeSimple`, `StringEnum`, `ThinkingLevel`, `Model`
-- **`@mariozechner/pi-tui`**: `Container`, `SelectList`, `Text`, `Spacer`, `truncateToWidth`
-- **`@sinclair/typebox`**: `Type` — JSON Schema builder for tool parameter schemas
+- **`@mariozechner/pi-coding-agent`**: `ExtensionAPI`, `isToolCallEventType`. Only runtime import.
+- Node built-ins: `node:fs`, `node:path`, `node:url`, `node:os`, `node:child_process`.
+- External processes: `git` (via `pi.exec`), `pi` CLI (via `spawn` in `pi-installer.ts`).
+
+No runtime imports of any sibling plugin — detection is filesystem-based (regex over `~/.pi/agent/settings.json`).
 
 ## Consumers
 - **Pi extension host**: loads via `package.json` `"extensions": ["./extensions"]`; calls `default export(pi: ExtensionAPI)` at session start
 
 ## Module Structure
 ```
-index.ts                  — Entry point; wires all hooks; imports all register* functions
-ask-user-question.ts      — ask_user_question tool (SelectList + free-text fallback)
-todo.ts                   — todo tool + /todos command + pure reducer + getTodos() accessor
-advisor.ts                — advisor tool + /advisor command + config persistence (~/.config/rpiv-pi/)
-todo-overlay.ts           — TodoOverlay: persistent TUI widget above editor input
-guidance.ts               — resolveGuidance() + handleToolCallGuidance(); session-scoped dedup Set
-agents.ts, package-checks.ts  — pure utilities; no ExtensionAPI; filesystem/OS only. agents.ts provides syncBundledAgents() with manifest-based add/update/remove detection
+index.ts                   — Thin composer; three register*(pi) calls only
+siblings.ts                — Declarative SIBLINGS registry (5 sibling plugins) — single source of truth
+session-hooks.ts           — registerSessionHooks: session_start/compact/shutdown, tool_call, before_agent_start
+setup-command.ts           — registerSetupCommand: /rpiv-setup installer
+update-agents-command.ts   — registerUpdateAgentsCommand: /rpiv-update-agents
+guidance.ts                — resolveGuidance + handleToolCallGuidance + injectRootGuidance; session-scoped dedup Set
+git-context.ts             — branch+commit+user cache + takeGitContextIfChanged + isGitMutatingCommand
+agents.ts                  — syncBundledAgents: manifest-based add/update/remove engine
+package-checks.ts          — findMissingSiblings: thin projection over SIBLINGS
+pi-installer.ts            — spawnPiInstall: Windows-safe `pi install <pkg>` wrapper
 ```
 
 ## Tool Registration (`pi.registerTool`)
+
+rpiv-core registers zero tools today — it is a pure orchestrator. New tools belong in sibling plugins. The pattern below applies to sibling plugins that register tools.
 
 ```typescript
 export function registerMyTool(pi: ExtensionAPI): void {
@@ -52,7 +58,7 @@ export function registerMyTool(pi: ExtensionAPI): void {
 
 ## Branch Replay (State Reconstruction)
 
-Tool state survives `session_compact` / `/reload` by storing it in the `details` envelope and replaying the session branch.
+rpiv-core has no tool state today (all state is sibling-owned). The pattern below applies to sibling plugins: tool state survives `session_compact` / `/reload` by storing it in the `details` envelope and replaying the session branch.
 
 ```typescript
 export function reconstructMyState(ctx: any): void {
@@ -66,51 +72,52 @@ export function reconstructMyState(ctx: any): void {
         nextId = msg.details.nextId;
     }
 }
-// Call from: session_start, session_compact, session_tree — NEVER from tool_execution_end
+// Call from: session_start, session_compact — never from events where the branch is stale
 ```
 
 ## Architectural Boundaries
-- **NO business logic in index.ts**: orchestration only — all logic in imported modules
-- **NO ExtensionAPI in utility modules**: `agents.ts`, `package-checks.ts`, `guidance.ts` are `pi`-free
-- **NO state mutation in tool_execution_end**: branch is stale; call `overlay?.update()` only, never `reconstruct*State()`
-- **NO advisor in active tools when model unset**: stripped each `before_agent_start` via `pi.setActiveTools()`
+- **NO business logic in index.ts**: orchestration only — all logic in imported registrar modules
+- **NO ExtensionAPI in utility modules**: `siblings.ts`, `package-checks.ts`, `agents.ts`, `pi-installer.ts` are `pi`-free; `guidance.ts`'s injection helpers take `pi` explicitly
+- **NO runtime import of sibling packages**: presence detection stays filesystem-based (regex over `~/.pi/agent/settings.json`)
+- **NO tools registered here**: rpiv-core is pure orchestrator — new tools belong in sibling plugins
 
 <important if="you are adding a new tool to this extension">
 ## Adding a New Tool
-1. Create `extensions/rpiv-core/my-tool.ts`; export `registerMyTool(pi: ExtensionAPI): void`
-2. Define `Type.Object({...})` schema and a `MyToolDetails` interface for the `details` envelope
-3. If stateful: add module-level `let items`, write a pure `applyMutation()` reducer, export `reconstructMyState(ctx)`
-4. In `index.ts`: import + call `registerMyTool(pi)` in the registration section; call `reconstructMyState(ctx)` in `session_start`, `session_compact`, `session_tree` handlers
+New tools do not belong in rpiv-core — it is a pure orchestrator and registers zero tools. Add the tool to a sibling plugin instead:
+1. Add the tool to an existing sibling (`@juicesharp/rpiv-advisor`, `@juicesharp/rpiv-todo`, `@juicesharp/rpiv-web-tools`, etc.) or create a new sibling plugin repo.
+2. Register the new sibling in rpiv-core by adding one entry to `SIBLINGS` in `siblings.ts` — presence detection, session_start missing-plugin warning, and `/rpiv-setup` all pick it up automatically.
+3. Add the package to `peerDependencies` in rpiv-pi's `package.json` pinned to `"*"`.
 </important>
 
 <important if="you are adding a new slash command to this extension">
 ## Adding a New Slash Command
-1. Short handler (no UI): inline `pi.registerCommand("name", { description, handler })` in `index.ts`
-2. Complex handler: create `my-command.ts`, export `registerMyCommand(pi)`, import + call in `index.ts`
+1. Create `my-command.ts`, export `registerMyCommand(pi: ExtensionAPI): void` — this is the default pattern; `index.ts` is a thin composer with no inline handlers.
+2. Register in `index.ts` by adding one call: `registerMyCommand(pi)`.
 3. Guard interactive operations: `if (!ctx.hasUI) { ctx.ui.notify("…", "error"); return; }`
-4. Handler returns `void`; use `ctx.ui.notify` / `ctx.ui.input` / `ctx.ui.confirm` / `ctx.ui.custom<T>`
+4. Group user-facing strings at file top as `MSG_*`/`ERR_*` constants or arrow-message helpers; no inline template literals in logic.
+5. Handler returns `void`; use `ctx.ui.notify` / `ctx.ui.input` / `ctx.ui.confirm` / `ctx.ui.custom<T>`
 </important>
 
 <important if="you are adding a new session lifecycle hook to this extension">
 ## Adding a Session Hook
-1. Identify the event: `session_start`, `session_compact`, `session_tree`, `session_shutdown`, `tool_execution_end`, `tool_call`, `before_agent_start`
-2. Add `pi.on("event_name", async (event, ctx) => { … })` in `index.ts` (or a dedicated `registerMyHook(pi)` function)
-3. State reset/reconstruction must be called from `session_start`, `session_compact`, and `session_tree` — all three
-4. `before_agent_start` can return `{ message: { customType, content, display: false } }` to inject a hidden LLM-only context message
+1. Add the `pi.on("event_name", async (event, ctx) => { … })` line inside `registerSessionHooks` in `session-hooks.ts`.
+2. Extract the handler body into a named helper function in the same file — `pi.on` lines are pure wiring.
+3. Valid events used here: `session_start`, `session_compact`, `session_shutdown`, `tool_call`, `before_agent_start`. rpiv-core has no tool state to reconstruct, so branch-replay events are not subscribed.
+4. `before_agent_start` can return `{ message: { customType, content, display: false } }` to inject a hidden LLM-only context message.
 </important>
 
 <important if="you are adding a new pure utility module to this extension">
 ## Adding a Utility Module
 1. Create `extensions/rpiv-core/my-util.ts` with no `ExtensionAPI` import
 2. Every function returns a value or `void`; never throws — catch all errors and return a safe default
-3. Config files: `loadX()` returns empty default on absent/parse errors; `saveX()` swallows all errors; call `chmodSync(path, 0o600)` after writing any file with credentials
-4. `PACKAGE_ROOT` is resolved via `import.meta.url` + `fileURLToPath` — never `__dirname`
+3. `PACKAGE_ROOT` is resolved via `import.meta.url` + `fileURLToPath` — never `__dirname`
 </important>
 
 <important if="you are adding a persistent TUI widget to this extension">
 ## Adding a Persistent Widget
+`TodoOverlay` was extracted to `@juicesharp/rpiv-todo`; no widgets currently live in rpiv-core. Widgets belong in sibling plugins that own the underlying tool state. The pattern below applies to sibling plugins:
 1. Create `my-overlay.ts` with a class exposing `setUICtx(ctx)`, `update()`, `dispose()`
 2. Follow the `widgetRegistered` / `tui` / `setWidget(KEY, factory, { placement: "aboveEditor" })` pattern from `TodoOverlay`
-3. In `index.ts`: `let overlay: MyOverlay | undefined` (closure variable); in `session_start` → `overlay ??= new MyOverlay(); overlay.setUICtx(ctx.ui); overlay.update()`; in `session_compact`/`session_tree` → `overlay?.update()`; in `session_shutdown` → `overlay?.dispose(); overlay = undefined`
+3. In the sibling's `index.ts`: `let overlay: MyOverlay | undefined` (closure variable); in `session_start` → `overlay ??= new MyOverlay(); overlay.setUICtx(ctx.ui); overlay.update()`; in `session_compact` and the sibling's branch-replay event → `overlay?.update()`; in `session_shutdown` → `overlay?.dispose(); overlay = undefined`
 4. Apply `truncateToWidth(line, width)` to every rendered line; use `├─` for all rows, `└─` for the last
 </important>

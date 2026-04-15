@@ -6,7 +6,7 @@ Named subagent profile library — isolated, single-purpose LLM workers dispatch
 At session start, `extensions/rpiv-core/agents.ts` syncs bundled `.md` files to `<cwd>/.pi/agents/` — adding new files and detecting outdated or removed agents (detect-only, no overwrite). Use `/rpiv-update-agents` to apply full sync: add new, update changed, remove stale managed files.
 
 ## Dependencies
-- **`@tintinweb/pi-subagents`**: provides the `Agent` tool and subagent dispatch runtime; without it, skills fall back silently to `general-purpose`
+- **`@tintinweb/pi-subagents`** (sibling plugin): provides the `Agent` tool and subagent dispatch runtime; without it, skills fall back silently to `general-purpose`
 
 ## Consumers
 Skills only — agents are never user-invoked:
@@ -20,8 +20,8 @@ codebase-locator.md, integration-scanner.md, test-case-locator.md, thoughts-loca
   — Locators: grep/find/ls only; report WHERE, never read file contents
 codebase-analyzer.md, thoughts-analyzer.md, codebase-pattern-finder.md
   — Analyzers: + read; understand HOW; include ultrathink directive in strategy
-precedent-locator.md    — Git history mining: + bash (git commands only)
-web-search-researcher.md — External research: + web_search, web_fetch
+precedent-locator.md    — Git history mining: + bash (git commands only; `@tintinweb/pi-subagents` provides the Agent dispatch runtime)
+web-search-researcher.md — External research: + web_search, web_fetch (tools provided by `@juicesharp/rpiv-web-tools`)
 ```
 
 ## Agent Definition Pattern
