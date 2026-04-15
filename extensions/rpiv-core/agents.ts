@@ -57,12 +57,6 @@ export interface SyncResult {
 	pendingRemove: string[];
 	/** Per-file errors collected during sync. */
 	errors: SyncError[];
-
-	// -- Legacy aliases (backward compat for existing callers) --
-	/** Alias: added + updated (files written by this run). */
-	copied: string[];
-	/** Alias: unchanged + pendingUpdate + files that errored during read and were not written. */
-	skipped: string[];
 }
 
 /** Create an empty SyncResult with all arrays initialized. */
@@ -75,8 +69,6 @@ function emptySyncResult(): SyncResult {
 		pendingUpdate: [],
 		pendingRemove: [],
 		errors: [],
-		copied: [],
-		skipped: [],
 	};
 }
 
@@ -219,7 +211,6 @@ export function syncBundledAgents(cwd: string, apply: boolean): SyncResult {
 				op: "read-src",
 				message: e instanceof Error ? e.message : String(e),
 			});
-			result.skipped.push(entry);
 			continue;
 		}
 		try {
@@ -230,18 +221,15 @@ export function syncBundledAgents(cwd: string, apply: boolean): SyncResult {
 				op: "read-dest",
 				message: e instanceof Error ? e.message : String(e),
 			});
-			result.skipped.push(entry);
 			continue;
 		}
 
 		if (Buffer.compare(srcContent, destContent) === 0) {
 			result.unchanged.push(entry);
-			result.skipped.push(entry);
 		} else if (apply) {
 			try {
 				copyFileSync(src, dest);
 				result.updated.push(entry);
-				result.copied.push(entry);
 			} catch (e) {
 				result.errors.push({
 					file: entry,
@@ -251,7 +239,6 @@ export function syncBundledAgents(cwd: string, apply: boolean): SyncResult {
 			}
 		} else {
 			result.pendingUpdate.push(entry);
-			result.skipped.push(entry);
 		}
 	}
 
@@ -287,26 +274,5 @@ export function syncBundledAgents(cwd: string, apply: boolean): SyncResult {
 		: [...sourceEntries, ...result.pendingRemove];
 	writeManifest(targetDir, manifestEntries);
 
-	// 6. Populate legacy `copied` alias (added + updated)
-	for (const name of result.added) {
-		result.copied.push(name);
-	}
-	// updated files were pushed to `copied` inline in the loop above
-
 	return result;
-}
-
-// ---------------------------------------------------------------------------
-// Backward-compatible wrapper
-// ---------------------------------------------------------------------------
-
-/**
- * Legacy entry point — delegates to syncBundledAgents.
- * Kept for backward compatibility; prefer syncBundledAgents for new callers.
- */
-export function copyBundledAgents(cwd: string, overwrite: boolean): {
-	copied: string[];
-	skipped: string[];
-} {
-	return syncBundledAgents(cwd, overwrite);
 }

@@ -1,24 +1,16 @@
 /**
- * Package presence checks — detects whether sibling pi packages are installed.
- *
- * Pure utility. No ExtensionAPI interactions.
+ * Detect which SIBLINGS are installed by reading ~/.pi/agent/settings.json.
+ * Pure utility — no ExtensionAPI.
  */
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-
-// ---------------------------------------------------------------------------
-// Paths
-// ---------------------------------------------------------------------------
+import { SIBLINGS, type SiblingPlugin } from "./siblings.js";
 
 const PI_AGENT_SETTINGS = join(homedir(), ".pi", "agent", "settings.json");
 
-// ---------------------------------------------------------------------------
-// Package Detection
-// ---------------------------------------------------------------------------
-
-export function readInstalledPackages(): string[] {
+function readInstalledPackages(): string[] {
 	if (!existsSync(PI_AGENT_SETTINGS)) return [];
 	try {
 		const raw = readFileSync(PI_AGENT_SETTINGS, "utf-8");
@@ -30,22 +22,12 @@ export function readInstalledPackages(): string[] {
 	}
 }
 
-export function hasPiSubagentsInstalled(): boolean {
-	return readInstalledPackages().some((entry) => /@tintinweb\/pi-subagents/i.test(entry));
-}
-
-export function hasRpivAskUserQuestionInstalled(): boolean {
-	return readInstalledPackages().some((entry) => /rpiv-ask-user-question/i.test(entry));
-}
-
-export function hasRpivTodoInstalled(): boolean {
-	return readInstalledPackages().some((entry) => /rpiv-todo/i.test(entry));
-}
-
-export function hasRpivAdvisorInstalled(): boolean {
-	return readInstalledPackages().some((entry) => /rpiv-advisor/i.test(entry));
-}
-
-export function hasRpivWebToolsInstalled(): boolean {
-	return readInstalledPackages().some((entry) => /rpiv-web-tools/i.test(entry));
+/**
+ * Return the SIBLINGS not currently installed.
+ * Reads ~/.pi/agent/settings.json once per call — callers that need both the
+ * full snapshot and the missing subset should call this once and filter.
+ */
+export function findMissingSiblings(): SiblingPlugin[] {
+	const installed = readInstalledPackages();
+	return SIBLINGS.filter((s) => !installed.some((entry) => s.matches.test(entry)));
 }
