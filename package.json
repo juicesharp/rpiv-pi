@@ -17,7 +17,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "files": ["extensions/", "skills/", "agents/", "scripts/", "README.md"],
+  "files": ["extensions/", "skills/", "agents/", "scripts/", "README.md", "LICENSE"],
   "pi": {
     "extensions": ["./extensions"],
     "skills": ["./skills"]
