@@ -40,7 +40,7 @@ export function registerSessionHooks(pi: ExtensionAPI): void {
 		injectRootGuidance(ctx.cwd, pi);
 		scaffoldThoughtsDirs(ctx.cwd);
 		await injectGitContext(pi, (msg) =>
-			pi.sendMessage({ customType: "rpiv-git-context", content: msg, display: false }),
+			pi.sendMessage({ customType: "rpiv-git-context", content: msg, display: !!pi.getFlag("rpiv-debug") }),
 		);
 		const agents = syncBundledAgents(ctx.cwd, false);
 		if (ctx.hasUI) {
@@ -55,7 +55,7 @@ export function registerSessionHooks(pi: ExtensionAPI): void {
 		resetInjectedMarker();
 		injectRootGuidance(ctx.cwd, pi);
 		await injectGitContext(pi, (msg) =>
-			pi.sendMessage({ customType: "rpiv-git-context", content: msg, display: false }),
+			pi.sendMessage({ customType: "rpiv-git-context", content: msg, display: !!pi.getFlag("rpiv-debug") }),
 		);
 	});
 
@@ -75,7 +75,7 @@ export function registerSessionHooks(pi: ExtensionAPI): void {
 	pi.on("before_agent_start", async () => {
 		const content = await takeGitContextIfChanged(pi);
 		if (!content) return;
-		return { message: { customType: "rpiv-git-context", content, display: false } };
+		return { message: { customType: "rpiv-git-context", content, display: !!pi.getFlag("rpiv-debug") } };
 	});
 }
 

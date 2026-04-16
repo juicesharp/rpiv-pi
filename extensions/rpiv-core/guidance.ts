@@ -147,7 +147,7 @@ export function injectRootGuidance(cwd: string, pi: ExtensionAPI): void {
 	pi.sendMessage({
 		customType: "rpiv-guidance",
 		content: `## Project Guidance: ${label}\n\n${content}`,
-		display: false,
+		display: !!pi.getFlag("rpiv-debug"),
 	});
 }
 
@@ -187,7 +187,7 @@ export function handleToolCallGuidance(
 	pi.sendMessage({
 		customType: "rpiv-guidance",
 		content: contextParts.join("\n\n---\n\n"),
-		display: false,
+		display: !!pi.getFlag("rpiv-debug"),
 	});
 }
 
