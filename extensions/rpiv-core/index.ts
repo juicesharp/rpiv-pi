@@ -8,12 +8,13 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { FLAG_DEBUG } from "./constants.js";
 import { registerSessionHooks } from "./session-hooks.js";
 import { registerSetupCommand } from "./setup-command.js";
 import { registerUpdateAgentsCommand } from "./update-agents-command.js";
 
 export default function (pi: ExtensionAPI) {
-	pi.registerFlag("rpiv-debug", {
+	pi.registerFlag(FLAG_DEBUG, {
 		description: "Show injected guidance and git-context messages",
 		type: "boolean",
 		default: false,

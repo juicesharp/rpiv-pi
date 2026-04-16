@@ -16,6 +16,7 @@ import {
 	takeGitContextIfChanged,
 } from "./git-context.js";
 import { syncBundledAgents, type SyncResult } from "./agents.js";
+import { FLAG_DEBUG, MSG_TYPE_GIT_CONTEXT } from "./constants.js";
 import { findMissingSiblings } from "./package-checks.js";
 
 const THOUGHTS_DIRS = [
@@ -40,7 +41,7 @@ export function registerSessionHooks(pi: ExtensionAPI): void {
 		injectRootGuidance(ctx.cwd, pi);
 		scaffoldThoughtsDirs(ctx.cwd);
 		await injectGitContext(pi, (msg) =>
-			pi.sendMessage({ customType: "rpiv-git-context", content: msg, display: !!pi.getFlag("rpiv-debug") }),
+			pi.sendMessage({ customType: MSG_TYPE_GIT_CONTEXT, content: msg, display: !!pi.getFlag(FLAG_DEBUG) }),
 		);
 		const agents = syncBundledAgents(ctx.cwd, false);
 		if (ctx.hasUI) {
@@ -55,7 +56,7 @@ export function registerSessionHooks(pi: ExtensionAPI): void {
 		resetInjectedMarker();
 		injectRootGuidance(ctx.cwd, pi);
 		await injectGitContext(pi, (msg) =>
-			pi.sendMessage({ customType: "rpiv-git-context", content: msg, display: !!pi.getFlag("rpiv-debug") }),
+			pi.sendMessage({ customType: MSG_TYPE_GIT_CONTEXT, content: msg, display: !!pi.getFlag(FLAG_DEBUG) }),
 		);
 	});
 
@@ -75,7 +76,7 @@ export function registerSessionHooks(pi: ExtensionAPI): void {
 	pi.on("before_agent_start", async () => {
 		const content = await takeGitContextIfChanged(pi);
 		if (!content) return;
-		return { message: { customType: "rpiv-git-context", content, display: !!pi.getFlag("rpiv-debug") } };
+		return { message: { customType: MSG_TYPE_GIT_CONTEXT, content, display: !!pi.getFlag(FLAG_DEBUG) } };
 	});
 }
 

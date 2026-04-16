@@ -22,6 +22,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, sep, isAbsolute, join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { FLAG_DEBUG, MSG_TYPE_GUIDANCE } from "./constants.js";
 
 // ---------------------------------------------------------------------------
 // Guidance Resolution
@@ -145,9 +146,9 @@ export function injectRootGuidance(cwd: string, pi: ExtensionAPI): void {
 		kind: "architecture",
 	});
 	pi.sendMessage({
-		customType: "rpiv-guidance",
+		customType: MSG_TYPE_GUIDANCE,
 		content: `## Project Guidance: ${label}\n\n${content}`,
-		display: !!pi.getFlag("rpiv-debug"),
+		display: !!pi.getFlag(FLAG_DEBUG),
 	});
 }
 
@@ -185,9 +186,9 @@ export function handleToolCallGuidance(
 	);
 
 	pi.sendMessage({
-		customType: "rpiv-guidance",
+		customType: MSG_TYPE_GUIDANCE,
 		content: contextParts.join("\n\n---\n\n"),
-		display: !!pi.getFlag("rpiv-debug"),
+		display: !!pi.getFlag(FLAG_DEBUG),
 	});
 }
 
