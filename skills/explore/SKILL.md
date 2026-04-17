@@ -22,37 +22,38 @@ I'll analyze the current codebase, generate solution options, and provide recomm
 
 Then wait for the user's request.
 
-## Steps to follow after receiving the request:
+## Steps
 
-1. **Read context files and understand the problem:**
-   - If user mentions tickets, research docs, or other files, read them FULLY first
-   - **IMPORTANT**: Use Read tool WITHOUT limit/offset parameters
-   - **CRITICAL**: Read these files in main context before invoking skills
-   - Extract requirements, constraints, and goals
-   - Identify what problem we're solving
+### Step 1: Read Mentioned Files
 
-2. **Generate candidates and dimensions:**
+- If user mentions tickets, research docs, or other files, read them FULLY first
+- **IMPORTANT**: Use Read tool WITHOUT limit/offset parameters
+- **CRITICAL**: Read these files in main context before invoking skills
+- Extract requirements, constraints, and goals
+- Identify what problem we're solving
 
-   **Generate 2–4 named candidates** from three sources, then merge into one shortlist:
+### Step 2: Generate Candidates and Dimensions
 
-   - **Ecosystem scan** — spawn `web-search-researcher` for any topic where the candidate space includes external libraries, frameworks, or services. Prompt it to return 2–4 named options with one-line "what it is" + canonical doc link per option. Skip only when the topic is wholly internal (e.g., "how to organize this service layer") and the orchestrator's design-space enumeration plus the user shortlist already cover the space.
-   - **Design-space enumeration** — orchestrator names abstract shapes from first principles when applicable (pub/sub vs direct-call vs event-bus; sync vs async; manual mapping vs auto-mapper). One-line "what it is" per shape.
-   - **User shortlist** — if the user pre-named candidates in the entry prompt ("compare TanStack Query vs SWR"), include those verbatim.
+**Generate 2–4 named candidates** from three sources, then merge into one shortlist:
 
-   Merge to 2–4 candidates total. Name each with a short noun phrase ("TanStack Query", "Direct event bus"). Deduplicate.
+- **Ecosystem scan** — spawn `web-search-researcher` for any topic where the candidate space includes external libraries, frameworks, or services. Prompt it to return 2–4 named options with one-line "what it is" + canonical doc link per option. Skip only when the topic is wholly internal (e.g., "how to organize this service layer") and the orchestrator's design-space enumeration plus the user shortlist already cover the space.
+- **Design-space enumeration** — orchestrator names abstract shapes from first principles when applicable (pub/sub vs direct-call vs event-bus; sync vs async; manual mapping vs auto-mapper). One-line "what it is" per shape.
+- **User shortlist** — if the user pre-named candidates in the entry prompt ("compare TanStack Query vs SWR"), include those verbatim.
 
-   **Default dimension list** (presented at Step 2.5; developer may drop irrelevant ones):
+Merge to 2–4 candidates total. Name each with a short noun phrase ("TanStack Query", "Direct event bus"). Deduplicate.
 
-   - **approach-shape** (hybrid) — what category of solution the candidate is, what core moving parts it requires.
-   - **precedent-fit** (codebase-anchored) — does the existing code already use this pattern; how many call sites would adopt the new option.
-   - **integration-risk** (codebase-anchored) — which existing seams the candidate would touch; what breaks if it lands.
-   - **migration-cost** (external-anchored for libraries; codebase-anchored for in-house code) — work to introduce the candidate plus work to remove the incumbent if there is one.
-   - **verification-cost** (codebase-anchored) — test/CI surface needed to make the candidate safe to adopt.
-   - **novelty** (external-anchored) — how recently the candidate emerged, ecosystem momentum, deprecation risk.
+**Default dimension list** (presented at Step 3; developer may drop irrelevant ones):
 
-   Hold the candidate set and default dimension list in working state for the Step 2.5 checkpoint. Do not dispatch fit agents yet.
+- **approach-shape** (hybrid) — what category of solution the candidate is, what core moving parts it requires.
+- **precedent-fit** (codebase-anchored) — does the existing code already use this pattern; how many call sites would adopt the new option.
+- **integration-risk** (codebase-anchored) — which existing seams the candidate would touch; what breaks if it lands.
+- **migration-cost** (external-anchored for libraries; codebase-anchored for in-house code) — work to introduce the candidate plus work to remove the incumbent if there is one.
+- **verification-cost** (codebase-anchored) — test/CI surface needed to make the candidate safe to adopt.
+- **novelty** (external-anchored) — how recently the candidate emerged, ecosystem momentum, deprecation risk.
 
-## Step 2.5: Candidate Checkpoint
+Hold the candidate set and default dimension list in working state for the Step 3 checkpoint. Do not dispatch fit agents yet.
+
+### Step 3: Candidate Checkpoint
 
 Present the candidate set and default dimensions to the developer before per-candidate fit dispatch.
 
@@ -74,251 +75,257 @@ Present the candidate set and default dimensions to the developer before per-can
 
 3. **Handle developer input:**
 
-   **"Proceed"**: lock the candidate × dimension set; advance to Step 3.
+   **"Proceed"**: lock the candidate × dimension set; advance to Step 4.
 
    **"Adjust candidates or dimensions"**: ask the follow-up free-text question with prefix `❓ Question:` — "Which candidates and dimensions should be added, dropped, or renamed?" — apply edits to the working set, re-present, and confirm again with the same three-option `ask_user_question`.
 
-   **"Re-generate candidates"**: ask the follow-up free-text question with prefix `❓ Question:` — "What should be different in candidate generation? (narrower/wider scope, different ecosystem, exclude approach X, …)" — return to Step 2 with the updated scope, then re-enter Step 2.5.
+   **"Re-generate candidates"**: ask the follow-up free-text question with prefix `❓ Question:` — "What should be different in candidate generation? (narrower/wider scope, different ecosystem, exclude approach X, …)" — return to Step 2 with the updated scope, then re-enter Step 3.
 
    Loop until "Proceed" is selected.
 
-3. **Per-candidate fit dispatch (parallel agents):**
-
-   For each confirmed candidate, dispatch up to two agents in parallel — total ≤ 2 × N agents:
+### Step 4: Per-Candidate Fit Dispatch (parallel agents)
 
-   - **One `codebase-analyzer` per candidate** — when ≥1 kept dimension is codebase-anchored (precedent-fit, integration-risk, often migration-cost and verification-cost). The agent scores the candidate on every kept codebase-anchored dimension in a single pass, returning evidence per dimension with `file:line` references.
-   - **One `web-search-researcher` per candidate** — when ≥1 kept dimension is external-anchored (novelty, often migration-cost for libraries, approach-shape for ecosystem options). The agent scores the candidate on every kept external-anchored dimension in a single pass, returning evidence per dimension with doc/source links.
+For each confirmed candidate, dispatch up to two agents in parallel — total ≤ 2 × N agents:
 
-   Skip either agent for a candidate when no dimension of that anchor-type was kept. Hybrid dimension `approach-shape` is scored by the orchestrator after both agents return, by combining their per-candidate findings.
+- **One `codebase-analyzer` per candidate** — when ≥1 kept dimension is codebase-anchored (precedent-fit, integration-risk, often migration-cost and verification-cost). The agent scores the candidate on every kept codebase-anchored dimension in a single pass, returning evidence per dimension with `file:line` references.
+- **One `web-search-researcher` per candidate** — when ≥1 kept dimension is external-anchored (novelty, often migration-cost for libraries, approach-shape for ecosystem options). The agent scores the candidate on every kept external-anchored dimension in a single pass, returning evidence per dimension with doc/source links.
 
-   **Per-candidate prompt shape** (use the same outer template, fill in candidate name and kept dimensions):
+Skip either agent for a candidate when no dimension of that anchor-type was kept. Hybrid dimension `approach-shape` is scored by the orchestrator after both agents return, by combining their per-candidate findings.
 
-   ```
-   Candidate: [name] — [one-line what it is]
-   Topic: [topic from Step 1]
+**Per-candidate prompt shape** (use the same outer template, fill in candidate name and kept dimensions):
 
-   Score this single candidate on the following dimensions, each with concrete evidence ([file:line] for codebase, doc/source link for external). Report findings as one section per dimension.
+```
+Candidate: [name] — [one-line what it is]
+Topic: [topic from Step 1]
 
-   Dimensions for this run:
-   - [dimension name] — [one-line of what to look for]
-   - ...
+Score this single candidate on the following dimensions, each with concrete evidence ([file:line] for codebase, doc/source link for external). Report findings as one section per dimension.
 
-   Do NOT compare against other candidates; another agent handles each one separately. Focus on depth of evidence for THIS candidate.
-   ```
+Dimensions for this run:
+- [dimension name] — [one-line of what to look for]
+- ...
 
-   Wait for ALL agents to complete before proceeding.
+Do NOT compare against other candidates; another agent handles each one separately. Focus on depth of evidence for THIS candidate.
+```
 
-   **Coverage check**: every (candidate × kept-dimension) cell is filled — by an agent's evidence or by an explicit `null` ("does not apply to this candidate"). Cells silently dropped indicate a missing dispatch — re-run that candidate's agent.
+Wait for ALL agents to complete before proceeding.
 
-4. **Synthesize and recommend:**
+**Coverage check**: every (candidate × kept-dimension) cell is filled — by an agent's evidence or by an explicit `null` ("does not apply to this candidate"). Cells silently dropped indicate a missing dispatch — re-run that candidate's agent.
 
-   - Cross-reference per-candidate findings — fill the candidate × dimension grid with evidence per cell.
-   - Apply the fit filter qualitatively per candidate: a candidate "clears" when no kept dimension surfaces a blocking concern (integration-risk that breaks load-bearing seams, migration-cost that exceeds the topic's scope, verification-cost with no path to coverage).
-   - **If ≥1 candidate clears the fit filter**: pick the strongest, document rationale with evidence, and explain why alternatives weren't chosen. Identify conditions that would change the recommendation.
-   - **If every candidate fails the fit filter**: produce a "no-fit" recommendation — list each candidate's blocking dimension with evidence, recommend re-scoping the question or expanding the candidate pool, and set Step 6 frontmatter `confidence: low` and `status: blocked`.
+### Step 5: Synthesize and Recommend
 
-5. **Determine metadata and filename:**
-   - Filename format: `thoughts/shared/solutions/YYYY-MM-DD_HH-MM-SS_[topic].md`
-     - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
-     - [topic]: Brief kebab-case description
-   - Repository name: from git root basename, or current directory basename if not a git repo
-   - Use the git branch and commit from the git context injected at the start of the session (or run `git branch --show-current` / `git rev-parse --short HEAD` directly)
-   - Researcher: use the User from the git context injected at the start of the session (fallback: "unknown")
-   - If metadata unavailable: use "unknown" for commit/branch
+- Cross-reference per-candidate findings — fill the candidate × dimension grid with evidence per cell.
+- Apply the fit filter qualitatively per candidate: a candidate "clears" when no kept dimension surfaces a blocking concern (integration-risk that breaks load-bearing seams, migration-cost that exceeds the topic's scope, verification-cost with no path to coverage).
+- **If ≥1 candidate clears the fit filter**: pick the strongest, document rationale with evidence, and explain why alternatives weren't chosen. Identify conditions that would change the recommendation.
+- **If every candidate fails the fit filter**: produce a "no-fit" recommendation — list each candidate's blocking dimension with evidence, recommend re-scoping the question or expanding the candidate pool, and set Step 7 frontmatter `confidence: low` and `status: blocked`.
 
-6. **Generate solutions document:**
-   - Use the metadata gathered in step 5
-   - Structure the document with YAML frontmatter followed by content:
-     ```markdown
-     ---
-     date: [Current date and time with timezone in ISO format]
-     researcher: [Researcher name]
-     git_commit: [Current commit hash]
-     branch: [Current branch name]
-     repository: [Repository name]
-     topic: "[Feature/Problem]"
-     confidence: high | medium | low
-     complexity: low | medium | high
-     status: ready | awaiting_input | blocked
-     tags: [solutions, component-names]
-     last_updated: [Current date in YYYY-MM-DD format]
-     last_updated_by: [Researcher name]
-     ---
+### Step 6: Determine Metadata and Filename
 
-     # Solution Analysis: [Feature/Problem]
+- Filename format: `thoughts/shared/solutions/YYYY-MM-DD_HH-MM-SS_[topic].md`
+  - YYYY-MM-DD_HH-MM-SS: Current date and time (e.g., 2025-10-11_14-30-22)
+  - [topic]: Brief kebab-case description
+- Repository name: from git root basename, or current directory basename if not a git repo
+- Use the git branch and commit from the git context injected at the start of the session (or run `git branch --show-current` / `git rev-parse --short HEAD` directly)
+- Researcher: use the User from the git context injected at the start of the session (fallback: "unknown")
+- If metadata unavailable: use "unknown" for commit/branch
 
-     **Date**: [Current date and time with timezone from step 5]
-     **Researcher**: [Researcher name from step 5]
-     **Git Commit**: [Current commit hash from step 5]
-     **Branch**: [Current branch name from step 5]
-     **Repository**: [Repository name]
+### Step 7: Generate Solutions Document
 
-     ## Research Question
-     [Original user query]
+- Use the metadata gathered in step 6
+- Structure the document with YAML frontmatter followed by content:
 
-     ## Summary
-     **Problem**: [What we're solving]
-     **Recommended**: [Option name] - [One sentence why]
-     **Effort**: [Low/Med/High] ([N days])
-     **Confidence**: [High/Med/Low]
+  ```markdown
+  ---
+  date: [Current date and time with timezone in ISO format]
+  researcher: [Researcher name]
+  git_commit: [Current commit hash]
+  branch: [Current branch name]
+  repository: [Repository name]
+  topic: "[Feature/Problem]"
+  confidence: high | medium | low
+  complexity: low | medium | high
+  status: ready | awaiting_input | blocked
+  tags: [solutions, component-names]
+  last_updated: [Current date in YYYY-MM-DD format]
+  last_updated_by: [Researcher name]
+  ---
 
-     ## Problem Statement
+  # Solution Analysis: [Feature/Problem]
 
-     **Requirements:**
-     - [Requirement 1]
-     - [Requirement 2]
+  **Date**: [Current date and time with timezone from step 6]
+  **Researcher**: [Researcher name from step 6]
+  **Git Commit**: [Current commit hash from step 6]
+  **Branch**: [Current branch name from step 6]
+  **Repository**: [Repository name]
 
-     **Constraints:**
-     - [Hard constraint - must respect]
-     - [Soft constraint - should consider]
+  ## Research Question
+  [Original user query]
 
-     **Success criteria:**
-     - [What "done" looks like]
+  ## Summary
+  **Problem**: [What we're solving]
+  **Recommended**: [Option name] - [One sentence why]
+  **Effort**: [Low/Med/High] ([N days])
+  **Confidence**: [High/Med/Low]
 
-     ## Current State
+  ## Problem Statement
 
-     **Existing implementation:**
-     [What exists with file:line references]
+  **Requirements:**
+  - [Requirement 1]
+  - [Requirement 2]
 
-     **Relevant patterns:**
-     - [Pattern 1]: `file.ext:line` - Used in [N] places
-     - [Pattern 2]: `file.ext:line` - Used in [N] places
+  **Constraints:**
+  - [Hard constraint - must respect]
+  - [Soft constraint - should consider]
 
-     **Integration points:**
-     - `file.ext:line` - [Where feature hooks in]
-     - `file.ext:line` - [Another integration point]
+  **Success criteria:**
+  - [What "done" looks like]
 
-     ## Solution Options
+  ## Current State
 
-     ### Option 1: [Name]
-     **How it works:**
-     [2-3 sentence description + implementation approach]
+  **Existing implementation:**
+  [What exists with file:line references]
 
-     **Pros:**
-     - [Advantage with evidence from codebase]
-     - [Advantage with evidence]
+  **Relevant patterns:**
+  - [Pattern 1]: `file.ext:line` - Used in [N] places
+  - [Pattern 2]: `file.ext:line` - Used in [N] places
 
-     **Cons:**
-     - [Disadvantage with impact]
+  **Integration points:**
+  - `file.ext:line` - [Where feature hooks in]
+  - `file.ext:line` - [Another integration point]
 
-     **Complexity:** [Low/Med/High] (~[N] days)
-     - Files to create: [N] (~[X] lines)
-     - Files to modify: [N] (~[X] lines)
-     - Risk level: [Low/Med/High]
+  ## Solution Options
 
-     ### Option 2: [Alternative Name]
-     [Same structure as Option 1]
+  ### Option 1: [Name]
+  **How it works:**
+  [2-3 sentence description + implementation approach]
 
-     ### Option 3: [Another Alternative]
-     [Same structure as Option 1]
+  **Pros:**
+  - [Advantage with evidence from codebase]
+  - [Advantage with evidence]
 
-     ## Comparison
+  **Cons:**
+  - [Disadvantage with impact]
 
-     | Criteria | Option 1 | Option 2 | Option 3 |
-     |----------|----------|----------|----------|
-     | Complexity | [L/M/H] | [L/M/H] | [L/M/H] |
-     | Codebase fit | [H/M/L] | [H/M/L] | [H/M/L] |
-     | Risk | [L/M/H] | [L/M/H] | [L/M/H] |
+  **Complexity:** [Low/Med/High] (~[N] days)
+  - Files to create: [N] (~[X] lines)
+  - Files to modify: [N] (~[X] lines)
+  - Risk level: [Low/Med/High]
 
-     ## Recommendation
+  ### Option 2: [Alternative Name]
+  [Same structure as Option 1]
 
-     <!-- Render exactly ONE of the two blocks below, based on Step 4's fit-filter outcome. -->
+  ### Option 3: [Another Alternative]
+  [Same structure as Option 1]
 
-     **(A) When ≥1 candidate clears the fit filter:**
+  ## Comparison
 
-     **Selected:** [Option N]
+  | Criteria | Option 1 | Option 2 | Option 3 |
+  |----------|----------|----------|----------|
+  | Complexity | [L/M/H] | [L/M/H] | [L/M/H] |
+  | Codebase fit | [H/M/L] | [H/M/L] | [H/M/L] |
+  | Risk | [L/M/H] | [L/M/H] | [L/M/H] |
 
-     **Rationale:**
-     - [Key reason with evidence]
-     - [Key reason with evidence]
-     - ...
+  ## Recommendation
 
-     **Why not alternatives:**
-     - Option X: [Reason]
+  <!-- Render exactly ONE of the two blocks below, based on Step 5's fit-filter outcome. -->
 
-     **Trade-offs:**
-     - Accepting [limitation] for [benefit]
+  **(A) When ≥1 candidate clears the fit filter:**
 
-     **Implementation approach:**
-     1. [Phase 1] - [What to build]
-     2. ...
+  **Selected:** [Option N]
 
-     **Integration points:**
-     - `file.ext:line` - [Specific change]
-     - `file.ext:line` - [Specific change]
+  **Rationale:**
+  - [Key reason with evidence]
+  - [Key reason with evidence]
+  - ...
 
-     **Patterns to follow:**
-     - [Pattern]: `file.ext:line`
+  **Why not alternatives:**
+  - Option X: [Reason]
 
-     **Risks:**
-     - [Risk]: [Mitigation]
+  **Trade-offs:**
+  - Accepting [limitation] for [benefit]
 
-     **(B) When every candidate fails the fit filter:**
+  **Implementation approach:**
+  1. [Phase 1] - [What to build]
+  2. ...
 
-     **No-fit:** every candidate surfaced a blocking concern on at least one kept dimension.
+  **Integration points:**
+  - `file.ext:line` - [Specific change]
+  - `file.ext:line` - [Specific change]
 
-     **Per-candidate blockers:**
-     - [Option 1]: [blocking dimension] — [evidence with file:line or doc link]
-     - [Option 2]: [blocking dimension] — [evidence]
-     - ...
+  **Patterns to follow:**
+  - [Pattern]: `file.ext:line`
 
-     **Recommended next step:**
-     - [Re-scope the question] — [how the topic should narrow/widen so candidates can clear]
-     - OR [Expand the candidate pool] — [what new candidate sources to enumerate; e.g., named ecosystem option not surfaced by Step 2]
+  **Risks:**
+  - [Risk]: [Mitigation]
 
-     **Frontmatter overrides:** set `confidence: low` and `status: blocked`.
+  **(B) When every candidate fails the fit filter:**
 
-     ## Scope Boundaries
-     - [What we're building]
-     - [What we're NOT doing]
+  **No-fit:** every candidate surfaced a blocking concern on at least one kept dimension.
 
-     ## Testing Strategy
+  **Per-candidate blockers:**
+  - [Option 1]: [blocking dimension] — [evidence with file:line or doc link]
+  - [Option 2]: [blocking dimension] — [evidence]
+  - ...
 
-     **Unit tests:**
-     - [Key test scenario 1]
-     - ...
+  **Recommended next step:**
+  - [Re-scope the question] — [how the topic should narrow/widen so candidates can clear]
+  - OR [Expand the candidate pool] — [what new candidate sources to enumerate; e.g., named ecosystem option not surfaced by Step 2]
 
-     **Integration tests:**
-     - [End-to-end scenario 1]
-     - ...
+  **Frontmatter overrides:** set `confidence: low` and `status: blocked`.
 
-     **Manual verification:**
-     - [ ] [Manual test 1]
-     - [ ] ...
+  ## Scope Boundaries
+  - [What we're building]
+  - [What we're NOT doing]
 
-     ## Open Questions
-     **Resolved during research:**
-     - [Question that was answered] - [Answer with evidence from file:line]
+  ## Testing Strategy
 
-     **Requires user input:**
-     - [Business or design question] - [Default assumption for planning]
+  **Unit tests:**
+  - [Key test scenario 1]
+  - ...
 
-     **Blockers:**
-     - [Critical unknown that prevents implementation] - [How to unblock]
+  **Integration tests:**
+  - [End-to-end scenario 1]
+  - ...
 
-     ## References
+  **Manual verification:**
+  - [ ] [Manual test 1]
+  - [ ] ...
 
-     - `thoughts/shared/research/[file].md` - [Context]
-     - `src/file.ext:line` - [Similar implementation]
-     - `thoughts/shared/[file].md` - [Historical decision]
-     ```
+  ## Open Questions
+  **Resolved during research:**
+  - [Question that was answered] - [Answer with evidence from file:line]
 
-7. **Present findings:**
-   - Present concise summary with clear recommendation
-   - Highlight key integration points
-   - Ask if they want to proceed to /skill:design with the chosen option or need clarification
+  **Requires user input:**
+  - [Business or design question] - [Default assumption for planning]
 
-8. **Handle follow-up questions:**
-   - If user has questions, append to same document
-   - Update frontmatter: `last_updated` and `last_updated_by`
-   - Add section: `## Follow-up Analysis [timestamp]`
-   - Spawn additional agents as needed
+  **Blockers:**
+  - [Critical unknown that prevents implementation] - [How to unblock]
 
-## Important notes:
+  ## References
+
+  - `thoughts/shared/research/[file].md` - [Context]
+  - `src/file.ext:line` - [Similar implementation]
+  - `thoughts/shared/[file].md` - [Historical decision]
+  ```
+
+### Step 8: Present Findings
+
+- Present concise summary with clear recommendation
+- Highlight key integration points
+- Ask if they want to proceed to /skill:design with the chosen option or need clarification
+
+### Step 9: Handle Follow-up Questions
+
+- If user has questions, append to same document
+- Update frontmatter: `last_updated` and `last_updated_by`
+- Add section: `## Follow-up Analysis [timestamp]`
+- Spawn additional agents as needed
+
+## Important Notes
+
 - Always use parallel Agent tool calls to maximize efficiency and minimize context usage
 - Always spawn fresh research to validate current state - never rely on old research docs as source of truth
 - Old research documents can provide historical context but must be validated against current code
-- Generate 2-4 named candidates in Step 2; confirm them with the developer at Step 2.5 before per-candidate fit dispatch
+- Generate 2-4 named candidates in Step 2; confirm them with the developer at Step 3 before per-candidate fit dispatch
 - Web-search-researcher is a first-class Step 2 agent for ecosystem candidate-source — skip only when the topic is wholly internal and design-space enumeration plus user shortlist cover the space
 - Per-candidate fit dispatch caps at two agents per candidate (one codebase-analyzer, one web-search-researcher) — skip either when no dimension of its anchor-type was kept
 - Solutions documents should be self-contained with all necessary context
@@ -332,7 +339,7 @@ Present the candidate set and default dimensions to the developer before per-can
 - **File reading**: Always read mentioned files FULLY (no limit/offset) before invoking skills
 - **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read mentioned files first before invoking skills (step 1)
-  - ALWAYS generate candidates and run the Step 2.5 checkpoint before per-candidate dispatch (steps 2 → 2.5 → 3)
-  - ALWAYS wait for all per-candidate agents to complete before synthesizing (step 3)
-  - ALWAYS gather metadata before writing the document (step 5 before step 6)
+  - ALWAYS generate candidates and run the Step 3 checkpoint before per-candidate dispatch (steps 2 → 3 → 4)
+  - ALWAYS wait for all per-candidate agents to complete before synthesizing (step 4)
+  - ALWAYS gather metadata before writing the document (step 6 before step 7)
   - NEVER write the solutions document with placeholder values
