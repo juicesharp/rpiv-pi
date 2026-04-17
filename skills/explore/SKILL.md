@@ -31,35 +31,91 @@ Then wait for the user's request.
    - Extract requirements, constraints, and goals
    - Identify what problem we're solving
 
-2. **Research current state and analyze requirements:**
-   - **ALWAYS spawn fresh research** - Never rely on old research docs as truth
-   - Old research can be read as historical context but validate against current code
-   - Think deeply about requirements, constraints, and integration points
+2. **Generate candidates and dimensions:**
 
-   **Spawn parallel research agents using the Agent tool:**
-   - Use the **codebase-locator** agent to find relevant components
-   - Use the **codebase-analyzer** agent to understand current implementation
-   - Use the **codebase-pattern-finder** agent to find similar patterns
-   - Use the **thoughts-locator** agent to find historical context in thoughts/
-   - Optional: Use the **web-search-researcher** agent for web research only if user requests
+   **Generate 2–4 named candidates** from three sources, then merge into one shortlist:
 
-3. **Generate and compare solution options:**
-   - Wait for ALL agents to complete
-   - Generate 2-4 viable approaches when possible
-   - If only 1 clear option exists, explain why alternatives aren't viable
-   - For each option, document:
-     - How it works and precedent in codebase
-     - Pros/cons with evidence
-     - Complexity and integration points
-     - Risk factors
-   - Cross-reference agent findings
-   - Compare options systematically
+   - **Ecosystem scan** — spawn `web-search-researcher` for any topic where the candidate space includes external libraries, frameworks, or services. Prompt it to return 2–4 named options with one-line "what it is" + canonical doc link per option. Skip only when the topic is wholly internal (e.g., "how to organize this service layer") and the orchestrator's design-space enumeration plus the user shortlist already cover the space.
+   - **Design-space enumeration** — orchestrator names abstract shapes from first principles when applicable (pub/sub vs direct-call vs event-bus; sync vs async; manual mapping vs auto-mapper). One-line "what it is" per shape.
+   - **User shortlist** — if the user pre-named candidates in the entry prompt ("compare TanStack Query vs SWR"), include those verbatim.
 
-4. **Make recommendation:**
-   - Choose best option based on requirements, codebase fit, and complexity
-   - Provide clear rationale with evidence
-   - Explain why alternatives were not chosen
-   - Identify conditions that would change recommendation
+   Merge to 2–4 candidates total. Name each with a short noun phrase ("TanStack Query", "Direct event bus"). Deduplicate.
+
+   **Default dimension list** (presented at Step 2.5; developer may drop irrelevant ones):
+
+   - **approach-shape** (hybrid) — what category of solution the candidate is, what core moving parts it requires.
+   - **precedent-fit** (codebase-anchored) — does the existing code already use this pattern; how many call sites would adopt the new option.
+   - **integration-risk** (codebase-anchored) — which existing seams the candidate would touch; what breaks if it lands.
+   - **migration-cost** (external-anchored for libraries; codebase-anchored for in-house code) — work to introduce the candidate plus work to remove the incumbent if there is one.
+   - **verification-cost** (codebase-anchored) — test/CI surface needed to make the candidate safe to adopt.
+   - **novelty** (external-anchored) — how recently the candidate emerged, ecosystem momentum, deprecation risk.
+
+   Hold the candidate set and default dimension list in working state for the Step 2.5 checkpoint. Do not dispatch fit agents yet.
+
+## Step 2.5: Candidate Checkpoint
+
+Present the candidate set and default dimensions to the developer before per-candidate fit dispatch.
+
+1. **Show candidates and dimensions:**
+
+   ```
+   ## Candidates for: [Topic]
+
+   1. [Candidate A] — [one-line what it is]
+   2. [Candidate B] — [one-line what it is]
+   ...
+
+   Dimensions (default 6; drop any that don't apply):
+   - approach-shape · precedent-fit · integration-risk
+   - migration-cost · verification-cost · novelty
+   ```
+
+2. **Confirm via the `ask_user_question` tool with the following question:** "[N] candidates, [D] dimensions. Begin per-candidate fit dispatch?". Header: "Candidates". Options: "Proceed (Recommended)" (Begin per-candidate fit dispatch with all [N] candidates and all [D] dimensions); "Adjust candidates or dimensions" (Rename, add, or drop candidates; drop dimensions that don't apply); "Re-generate candidates" (Candidates look wrong — re-run Step 2 with adjusted scope).
+
+3. **Handle developer input:**
+
+   **"Proceed"**: lock the candidate × dimension set; advance to Step 3.
+
+   **"Adjust candidates or dimensions"**: ask the follow-up free-text question with prefix `❓ Question:` — "Which candidates and dimensions should be added, dropped, or renamed?" — apply edits to the working set, re-present, and confirm again with the same three-option `ask_user_question`.
+
+   **"Re-generate candidates"**: ask the follow-up free-text question with prefix `❓ Question:` — "What should be different in candidate generation? (narrower/wider scope, different ecosystem, exclude approach X, …)" — return to Step 2 with the updated scope, then re-enter Step 2.5.
+
+   Loop until "Proceed" is selected.
+
+3. **Per-candidate fit dispatch (parallel agents):**
+
+   For each confirmed candidate, dispatch up to two agents in parallel — total ≤ 2 × N agents:
+
+   - **One `codebase-analyzer` per candidate** — when ≥1 kept dimension is codebase-anchored (precedent-fit, integration-risk, often migration-cost and verification-cost). The agent scores the candidate on every kept codebase-anchored dimension in a single pass, returning evidence per dimension with `file:line` references.
+   - **One `web-search-researcher` per candidate** — when ≥1 kept dimension is external-anchored (novelty, often migration-cost for libraries, approach-shape for ecosystem options). The agent scores the candidate on every kept external-anchored dimension in a single pass, returning evidence per dimension with doc/source links.
+
+   Skip either agent for a candidate when no dimension of that anchor-type was kept. Hybrid dimension `approach-shape` is scored by the orchestrator after both agents return, by combining their per-candidate findings.
+
+   **Per-candidate prompt shape** (use the same outer template, fill in candidate name and kept dimensions):
+
+   ```
+   Candidate: [name] — [one-line what it is]
+   Topic: [topic from Step 1]
+
+   Score this single candidate on the following dimensions, each with concrete evidence ([file:line] for codebase, doc/source link for external). Report findings as one section per dimension.
+
+   Dimensions for this run:
+   - [dimension name] — [one-line of what to look for]
+   - ...
+
+   Do NOT compare against other candidates; another agent handles each one separately. Focus on depth of evidence for THIS candidate.
+   ```
+
+   Wait for ALL agents to complete before proceeding.
+
+   **Coverage check**: every (candidate × kept-dimension) cell is filled — by an agent's evidence or by an explicit `null` ("does not apply to this candidate"). Cells silently dropped indicate a missing dispatch — re-run that candidate's agent.
+
+4. **Synthesize and recommend:**
+
+   - Cross-reference per-candidate findings — fill the candidate × dimension grid with evidence per cell.
+   - Apply the fit filter qualitatively per candidate: a candidate "clears" when no kept dimension surfaces a blocking concern (integration-risk that breaks load-bearing seams, migration-cost that exceeds the topic's scope, verification-cost with no path to coverage).
+   - **If ≥1 candidate clears the fit filter**: pick the strongest, document rationale with evidence, and explain why alternatives weren't chosen. Identify conditions that would change the recommendation.
+   - **If every candidate fails the fit filter**: produce a "no-fit" recommendation — list each candidate's blocking dimension with evidence, recommend re-scoping the question or expanding the candidate pool, and set Step 6 frontmatter `confidence: low` and `status: blocked`.
 
 5. **Determine metadata and filename:**
    - Filename format: `thoughts/shared/solutions/YYYY-MM-DD_HH-MM-SS_[topic].md`
@@ -166,6 +222,10 @@ Then wait for the user's request.
 
      ## Recommendation
 
+     <!-- Render exactly ONE of the two blocks below, based on Step 4's fit-filter outcome. -->
+
+     **(A) When ≥1 candidate clears the fit filter:**
+
      **Selected:** [Option N]
 
      **Rationale:**
@@ -192,6 +252,21 @@ Then wait for the user's request.
 
      **Risks:**
      - [Risk]: [Mitigation]
+
+     **(B) When every candidate fails the fit filter:**
+
+     **No-fit:** every candidate surfaced a blocking concern on at least one kept dimension.
+
+     **Per-candidate blockers:**
+     - [Option 1]: [blocking dimension] — [evidence with file:line or doc link]
+     - [Option 2]: [blocking dimension] — [evidence]
+     - ...
+
+     **Recommended next step:**
+     - [Re-scope the question] — [how the topic should narrow/widen so candidates can clear]
+     - OR [Expand the candidate pool] — [what new candidate sources to enumerate; e.g., named ecosystem option not surfaced by Step 2]
+
+     **Frontmatter overrides:** set `confidence: low` and `status: blocked`.
 
      ## Scope Boundaries
      - [What we're building]
@@ -243,19 +318,21 @@ Then wait for the user's request.
 - Always use parallel Agent tool calls to maximize efficiency and minimize context usage
 - Always spawn fresh research to validate current state - never rely on old research docs as source of truth
 - Old research documents can provide historical context but must be validated against current code
-- Focus on generating 2-4 viable solution options with specific file:line references
+- Generate 2-4 named candidates in Step 2; confirm them with the developer at Step 2.5 before per-candidate fit dispatch
+- Web-search-researcher is a first-class Step 2 agent for ecosystem candidate-source — skip only when the topic is wholly internal and design-space enumeration plus user shortlist cover the space
+- Per-candidate fit dispatch caps at two agents per candidate (one codebase-analyzer, one web-search-researcher) — skip either when no dimension of its anchor-type was kept
 - Solutions documents should be self-contained with all necessary context
-- Each agent prompt should be specific and focused on targeted research questions
-- Quantify pattern precedent - count usage in codebase, don't just say "follows pattern"
+- Each agent prompt should be specific and focused on a single candidate scored on the kept dimensions
+- Quantify pattern precedent — count usage in codebase, don't just say "follows pattern"
 - Ground complexity estimates in actual similar work from git history
-- Think like a software architect - you're setting up design for success by landing on one chosen approach with evidence
+- Think like a software architect — option-shopping output is 2–4 comparable candidates plus an honest fit verdict
 - Keep the main agent focused on synthesis and comparison, not deep implementation details
 - Encourage agents to find existing patterns and examples, not just describe possibilities
-- Resolve technical unknowns during research - don't leave critical questions for design
+- Resolve technical unknowns during research — don't leave critical questions for design
 - **File reading**: Always read mentioned files FULLY (no limit/offset) before invoking skills
 - **Critical ordering**: Follow the numbered steps exactly
   - ALWAYS read mentioned files first before invoking skills (step 1)
-  - ALWAYS spawn fresh research to validate current state (step 2)
-  - ALWAYS wait for all agents to complete before synthesizing (step 3)
+  - ALWAYS generate candidates and run the Step 2.5 checkpoint before per-candidate dispatch (steps 2 → 2.5 → 3)
+  - ALWAYS wait for all per-candidate agents to complete before synthesizing (step 3)
   - ALWAYS gather metadata before writing the document (step 5 before step 6)
   - NEVER write the solutions document with placeholder values
