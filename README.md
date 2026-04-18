@@ -145,6 +145,7 @@ Invoke via `/skill:<name>` from inside a Pi Agent session.
 | `/rpiv-setup` | Install all sibling plugins in one go |
 | `/rpiv-update-agents` | Sync rpiv agent profiles: add new, update changed, remove stale |
 | `/advisor` | Configure advisor model and reasoning effort |
+| `/btw` | Ask a side question without polluting the main conversation |
 | `/todos` | Show current todo list |
 | `/web-search-config` | Set Brave Search API key |
 
@@ -180,6 +181,7 @@ Pi Agent discovers extensions via `"extensions": ["./extensions"]` and skills vi
 
 - **Web search** — run `/web-search-config` to set the Brave Search API key, or set the `BRAVE_SEARCH_API_KEY` environment variable
 - **Advisor** — run `/advisor` to select a reviewer model and reasoning effort
+- **Side questions** — type `/btw <question>` anytime (even mid-stream) to ask the primary model a one-off question; answer appears in a borderless bottom overlay and never enters the main conversation
 - **Agent concurrency** — `@tintinweb/pi-subagents` defaults to 4 concurrent agents; raise via `/agents → Settings → Max concurrency → 48` if skills stall on wide fan-outs
 - **Agent profiles** — editable at `<cwd>/.pi/agents/`; sync from bundled defaults with `/rpiv-update-agents` (overwrites rpiv-managed files, preserves your custom agents)
 

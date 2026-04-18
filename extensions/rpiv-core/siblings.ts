@@ -41,6 +41,11 @@ export const SIBLINGS: readonly SiblingPlugin[] = [
 		provides: "advisor tool + /advisor command",
 	},
 	{
+		pkg: "npm:@juicesharp/rpiv-btw",
+		matches: /rpiv-btw/i,
+		provides: "/btw side-question command",
+	},
+	{
 		pkg: "npm:@juicesharp/rpiv-web-tools",
 		matches: /rpiv-web-tools/i,
 		provides: "web_search + web_fetch tools + /web-search-config",

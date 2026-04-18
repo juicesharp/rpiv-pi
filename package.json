@@ -28,6 +28,7 @@
     "@juicesharp/rpiv-ask-user-question": "*",
     "@juicesharp/rpiv-todo": "*",
     "@juicesharp/rpiv-advisor": "*",
+    "@juicesharp/rpiv-btw": "*",
     "@juicesharp/rpiv-web-tools": "*"
   }
 }
