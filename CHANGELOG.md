@@ -7,6 +7,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-04-18
+
+### Added
+- `@juicesharp/rpiv-btw` registered as a sibling plugin. `/rpiv-setup` now installs it, session-start warns when missing, and the README documents the new `/btw` command (ask a side question without polluting the main conversation).
+
 ## [0.5.1] — 2026-04-17
 
 ### Changed
@@ -54,6 +59,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Initial Pi extension: 9 agents and 21 skills covering the full discover → research → design → plan → implement → validate pipeline.
 
-[Unreleased]: https://github.com/juicesharp/rpiv-pi/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/juicesharp/rpiv-pi/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/juicesharp/rpiv-pi/releases/tag/v0.6.0
 [0.5.1]: https://github.com/juicesharp/rpiv-pi/releases/tag/v0.5.1
 [0.5.0]: https://github.com/juicesharp/rpiv-pi/releases/tag/v0.5.0
