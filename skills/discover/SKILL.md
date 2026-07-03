@@ -1,7 +1,7 @@
 ---
 name: discover
 description: Generate trace-quality research questions from codebase discovery. Spawns discovery agents and reads key files for depth, then synthesizes into dense question paragraphs for the research skill. Produces question artifacts in thoughts/shared/questions/. First stage of the research pipeline.
-argument-hint: [research question or task/ticket description]
+argument-hint: "[research question or task/ticket description]"
 ---
 
 # Research Questions

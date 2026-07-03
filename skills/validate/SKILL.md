@@ -1,7 +1,7 @@
 ---
 name: validate
 description: Verify that an implementation plan was correctly executed. Runs success criteria checks and generates validation reports. Use after implementation is complete.
-argument-hint: [plan-path]
+argument-hint: "[plan-path]"
 allowed-tools: Read, Bash(git *), Bash(make *), Glob, Grep, Agent
 ---
 

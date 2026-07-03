@@ -1,7 +1,7 @@
 ---
 name: plan
 description: Create phased implementation plans from design artifacts. Decomposes designs into parallelized atomic phases with success criteria in thoughts/shared/plans/. Use after design.
-argument-hint: [design artifact path]
+argument-hint: "[design artifact path]"
 ---
 
 # Write Plan

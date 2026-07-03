@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Conduct comprehensive code reviews by analyzing changes in parallel. Produces review documents in thoughts/shared/reviews/. Use when changes are ready for review.
-argument-hint: [scope]
+argument-hint: "[scope]"
 allowed-tools: Read, Bash(git *), Glob, Grep, Agent
 ---
 

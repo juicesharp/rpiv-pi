@@ -1,7 +1,7 @@
 ---
 name: create-handoff
 description: Create context-preserving handoff documents for session transitions. Compacts essential context into concise documents. Use when context is getting large or before starting a fresh session.
-argument-hint: [description]
+argument-hint: "[description]"
 allowed-tools: Read, Write, Bash(git *), Glob, Grep
 disable-model-invocation: true
 ---

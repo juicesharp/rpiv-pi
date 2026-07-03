@@ -1,7 +1,7 @@
 ---
 name: commit
 description: Create structured git commits. Groups related changes logically with clear, descriptive messages. Use when code changes are ready to commit.
-argument-hint: [message]
+argument-hint: "[message]"
 allowed-tools: Bash(git *), Read, Glob, Grep
 ---
 

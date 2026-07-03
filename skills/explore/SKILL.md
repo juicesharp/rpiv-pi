@@ -1,7 +1,7 @@
 ---
 name: explore
 description: Analyze solution options for features or changes. Compares approaches with pros/cons and provides recommendations. Produces documents in thoughts/shared/solutions/. Use when multiple valid approaches exist.
-argument-hint: [feature/change description]
+argument-hint: "[feature/change description]"
 ---
 
 # Research Solutions
