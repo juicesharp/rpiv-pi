@@ -1,7 +1,7 @@
 ---
 name: resume-handoff
 description: Resume work from a handoff document. Reads handoff, verifies current state, and continues implementation. Use at the start of a new session to pick up where you left off.
-argument-hint: [handoff-path]
+argument-hint: "[handoff-path]"
 ---
 
 # Resume work from a handoff document

@@ -1,7 +1,7 @@
 ---
 name: migrate-to-guidance
 description: Migrate existing CLAUDE.md files to .rpiv/guidance/ system. Finds all CLAUDE.md files, transforms references, and creates architecture.md files in the guidance shadow tree.
-argument-hint: [--delete-originals]
+argument-hint: "[--delete-originals]"
 allowed-tools: Bash, Read, Glob
 ---
 

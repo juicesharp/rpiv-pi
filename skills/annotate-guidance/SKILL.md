@@ -1,7 +1,7 @@
 ---
 name: annotate-guidance
 description: Generate architecture.md guidance files in .rpiv/guidance/ by analyzing architecture and patterns in parallel. Auto-detects architecture, proposes locations, and batch-writes compact documentation. Use for onboarding or improving AI assistant context.
-argument-hint: [target-directory]
+argument-hint: "[target-directory]"
 allowed-tools: Agent, Read, Write, Glob, Grep
 ---
 

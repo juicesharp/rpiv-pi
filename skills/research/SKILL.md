@@ -1,7 +1,7 @@
 ---
 name: research
 description: Answer structured research questions via targeted parallel analysis agents. Consumes question artifacts from discover. Produces research documents in thoughts/shared/research/. Second stage of the research pipeline — always requires a questions artifact.
-argument-hint: [path to discover artifact]
+argument-hint: "[path to discover artifact]"
 ---
 
 ## Questions Source

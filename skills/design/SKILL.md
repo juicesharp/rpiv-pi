@@ -1,7 +1,7 @@
 ---
 name: design
 description: Design features through iterative vertical-slice decomposition and progressive code generation with developer micro-checkpoints. For complex multi-component features touching 6+ files across multiple layers. Produces design artifacts in thoughts/shared/designs/. Always requires a research artifact from discover → research, or a solutions artifact from explore.
-argument-hint: [research artifact path]
+argument-hint: "[research artifact path]"
 ---
 
 # Design
